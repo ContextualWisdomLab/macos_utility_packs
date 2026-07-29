@@ -21,7 +21,8 @@ assert_eq "1" "$(grep -c 'BEGIN macos-ai-bootstrap:sebeolsik-ime' "$HAMMERSPOON_
 ime_config="${HOME}/.config/macos-ai-bootstrap/ime.lua"
 assert_file_contains "$ime_config" '3-Set Korean (390)' "built-in 390 Sebeolsik is the default"
 assert_file_contains "$ime_config" 'keyCode == 56' "IME tracks the left Shift key"
-assert_file_contains "$ime_config" 'keyCode == 49' "IME intercepts Space"
+assert_file_contains "$ime_config" 'keyCode ~= 49' "IME isolates Space events"
+assert_file_contains "$ime_config" 'spaceChordActive' "IME suppresses repeat and the matching Space key-up"
 assert_file_contains "$ime_config" 'hs.keycodes.setMethod' "IME toggles the macOS input method"
 assert_file_contains "$ime_config" 'MACOS_AI_KOREAN_INPUT_METHOD' "IME method is configurable"
 

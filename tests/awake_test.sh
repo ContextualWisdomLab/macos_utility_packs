@@ -39,5 +39,7 @@ assert_file_contains "${HOME}/.local/bin/ai-awake" 'caffeinate' "ai-awake is ins
 manual="${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md"
 assert_file_contains "$manual" 'ai-awake codex' "Korean manual explains awake wrapper"
 assert_file_contains "$manual" '절전' "Korean manual explains sleep prevention"
+assert_file_contains "${BOOTSTRAP_ROOT}/config/zshrc.block" "codex-awake='ai-awake codex'" "shell exposes a Codex awake shortcut"
+assert_file_contains "${BOOTSTRAP_ROOT}/config/zshrc.block" "claude-awake='ai-awake claude'" "shell exposes a Claude awake shortcut"
 
 finish_tests

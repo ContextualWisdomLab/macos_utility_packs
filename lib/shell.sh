@@ -70,15 +70,25 @@ configure_containers() {
   local target="${HOME}/.colima/_templates/default.yaml"
   [[ -f "$source_file" ]] || die "missing Colima template: ${source_file}"
 
-  if [[ -e "$target" ]]; then
-    record_result containers unchanged "existing Colima template preserved"
-    return 0
-  fi
   if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
     log "DRY-RUN install Colima containerd template at ${target}"
+    log "DRY-RUN install Colima bundled nerdctl PATH wrapper"
   else
-    mkdir -p "$(dirname "$target")"
-    cp "$source_file" "$target"
+    if [[ ! -e "$target" ]]; then
+      mkdir -p "$(dirname "$target")"
+      cp "$source_file" "$target"
+    fi
+    if ! command_exists nerdctl; then
+      command_exists colima || {
+        record_result containers failed "Colima is unavailable"
+        return 1
+      }
+      run colima nerdctl install || {
+        record_result containers failed "nerdctl wrapper installation failed"
+        return 1
+      }
+      hash -r
+    fi
   fi
   record_result containers changed "Colima configured for containerd/nerdctl"
 }

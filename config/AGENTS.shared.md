@@ -7,10 +7,10 @@ tokens.
 
 ### CodeGraph autonomous indexing
 
-At the start of work in any Git repository, check whether `.codegraph/` exists
-and whether its index is fresh relative to tracked source changes. If the index
-is absent, stale, or incompatible with the installed CodeGraph version, run
-`codegraph init -i` proactively without waiting for a separate user request.
+At the start of work in any Git repository, check whether `.codegraph/` exists.
+If it is absent, run `codegraph init` proactively, without waiting for a separate
+user request. CodeGraph auto-syncs an initialized graph as files
+change; if `codegraph status` reports an unhealthy index, run `codegraph sync`.
 Respect `.gitignore`, avoid secrets and generated build output, and report an
 indexing error rather than deleting user data. Once indexed, use CodeGraph MCP
 tools before broad file-reading or grep loops for architecture exploration.

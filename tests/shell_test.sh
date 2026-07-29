@@ -42,6 +42,7 @@ assert_file_contains "${BOOTSTRAP_ROOT}/lib/shell.sh" 'rust@stable' "Rust toolch
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/shell.sh" 'dotnet@8' ".NET and C# toolchain is managed through mise"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/shell.sh" 'mise activate bash' "mise runtimes are activated for the running bootstrap"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/shell.sh" 'mise exec node@24 -- corepack' "Corepack runs through the managed Node runtime"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/shell.sh" 'colima nerdctl install' "Colima installs its bundled nerdctl PATH wrapper"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/AGENTS.shared.md" 'Go Modules' "shared guidance explains Go isolation"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/AGENTS.shared.md" 'Cargo' "shared guidance explains Rust isolation"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/AGENTS.shared.md" 'Conan' "shared guidance explains C and C++ isolation"

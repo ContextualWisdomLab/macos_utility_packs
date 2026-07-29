@@ -28,6 +28,20 @@ doctor_file_contains() {
   [[ -f "$file" ]] && grep -Fq "$pattern" "$file"
 }
 
+doctor_json_has_all_mcp() {
+  local file="$1"
+  local section="${2:-mcpServers}"
+  [[ -f "$file" ]] || return 1
+  python3 - "$file" "$section" <<'PY' >/dev/null 2>&1
+import json, sys
+required = {"sequential-thinking", "time", "deepwiki", "context7", "memory", "codegraph", "figma"}
+value = json.load(open(sys.argv[1]))
+for key in filter(None, sys.argv[2].split(".")):
+    value = value[key]
+raise SystemExit(0 if isinstance(value, dict) and required <= set(value) else 1)
+PY
+}
+
 doctor_mcp_configs() {
   local catalog="${BOOTSTRAP_ROOT}/config/mcp-servers.json"
   python3 - "$catalog" <<'PY' >/dev/null 2>&1
@@ -38,12 +52,20 @@ raise SystemExit(0 if required <= set(servers) else 1)
 PY
   [[ $? -eq 0 ]] || return 1
 
-  codex mcp list >/dev/null 2>&1 || return 1
-  claude mcp list >/dev/null 2>&1 || return 1
-  doctor_file_contains "${HOME}/.copilot/mcp-config.json" "context7" || return 1
-  doctor_file_contains "${HOME}/.gemini/config/mcp_config.json" "context7" || return 1
-  doctor_file_contains "${HOME}/Library/Application Support/Code/User/mcp.json" "context7" || return 1
-  doctor_file_contains "${HOME}/.agents/AGENTS.md" "codegraph init -i"
+  local required_name output
+  output="$(codex mcp list 2>/dev/null)" || return 1
+  for required_name in sequential-thinking time deepwiki context7 memory codegraph figma; do
+    printf '%s\n' "$output" | grep -Fq "$required_name" || return 1
+  done
+  output="$(claude mcp list 2>/dev/null)" || return 1
+  for required_name in sequential-thinking time deepwiki context7 memory codegraph figma; do
+    printf '%s\n' "$output" | grep -Fq "$required_name" || return 1
+  done
+  doctor_json_has_all_mcp "${HOME}/.copilot/mcp-config.json" || return 1
+  doctor_json_has_all_mcp "${HOME}/.gemini/config/mcp_config.json" || return 1
+  doctor_json_has_all_mcp "${HOME}/Library/Application Support/Code/User/mcp.json" || return 1
+  doctor_file_contains "${HOME}/.agents/AGENTS.md" "codegraph init" &&
+    doctor_file_contains "${HOME}/.agents/AGENTS.md" "DietrichGebert/ponytail"
 }
 
 doctor_skills() {
@@ -130,7 +152,7 @@ run_doctor() {
   doctor_figma &&
     doctor_add REQ-10 Figma pass "official remote Figma MCP is configured" ||
     doctor_add REQ-10 Figma fail "Figma MCP configuration is incomplete"
-  doctor_has_commands mise uv pnpm go rustc cargo dotnet clang cmake ninja conan &&
+  doctor_has_commands mise uv node npm pnpm java go rustc cargo dotnet clang cmake ninja conan &&
     doctor_add REQ-11 Language-managers pass "Python, Java, Node, Go, Rust, .NET, C and C++ tooling is available" ||
     doctor_add REQ-11 Language-managers fail "one or more runtime managers are missing"
   doctor_file_contains "${HOME}/.zshrc" "BEGIN macos-ai-bootstrap:ai-native-shell" &&

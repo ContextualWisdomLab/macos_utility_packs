@@ -4,6 +4,7 @@
 local koreanMethod = os.getenv("MACOS_AI_KOREAN_INPUT_METHOD") or "3-Set Korean (390)"
 local englishLayout = os.getenv("MACOS_AI_ENGLISH_INPUT_LAYOUT") or "ABC"
 local leftShiftDown = false
+local spaceChordActive = false
 
 local function toggleInputSource()
   if hs.keycodes.currentMethod() == koreanMethod then
@@ -32,10 +33,20 @@ macosAiImeSpaceTap = hs.eventtap.new(
   {hs.eventtap.event.types.keyDown, hs.eventtap.event.types.keyUp},
   function(event)
     local keyCode = event:getKeyCode()
-    if keyCode == 49 and leftShiftDown then
-      if event:getType() == hs.eventtap.event.types.keyDown then
+    if keyCode ~= 49 then
+      return false
+    end
+
+    if event:getType() == hs.eventtap.event.types.keyDown and leftShiftDown then
+      if not spaceChordActive then
         toggleInputSource()
       end
+      spaceChordActive = true
+      return true
+    end
+
+    if event:getType() == hs.eventtap.event.types.keyUp and spaceChordActive then
+      spaceChordActive = false
       return true
     end
     return false

@@ -8,14 +8,16 @@ trap teardown_test_env EXIT
 
 discovery_output="$(
   python3 "${BOOTSTRAP_ROOT}/scripts/discover-skills.py" \
-    --curated-file "${BOOTSTRAP_ROOT}/tests/fixtures/official.json" \
+    --official-file "${BOOTSTRAP_ROOT}/tests/fixtures/official.html" \
     --topic-file "${BOOTSTRAP_ROOT}/tests/fixtures/topics.html"
 )"
 
 assert_contains "$discovery_output" $'vercel-labs/skills\tfind-skills' "find-skills is discovered"
-assert_contains "$discovery_output" $'openai/skills\tdocs' "official source is discovered"
+assert_contains "$discovery_output" $'openai/skills\t*' "all skills from an official repository are discovered"
 assert_contains "$discovery_output" $'obra/superpowers\tsystematic-debugging' "topic skill is discovered"
-assert_eq "1" "$(printf '%s\n' "$discovery_output" | grep -c $'vercel-labs/skills\tweb-design-guidelines')" "skills are deduplicated"
+assert_eq "0" "$(printf '%s\n' "$discovery_output" | grep -c $'vercel-labs/skills\tweb-design-guidelines')" "official wildcard deduplicates topic entries"
+assert_not_contains "$discovery_output" $'agents/codex\t*' "navigation routes are not treated as official repositories"
+assert_not_contains "$discovery_output" $'agent/codex\t*' "singular agent routes are not treated as official repositories"
 
 mock_log="${TEST_ROOT}/npx.log"
 cat > "${TEST_ROOT}/bin/npx" <<'MOCK'

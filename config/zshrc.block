@@ -27,6 +27,8 @@ alias ls='eza'
 alias ll='eza -la --git'
 alias find='fd'
 alias top='btop'
+alias codex-awake='ai-awake codex'
+alias claude-awake='ai-awake claude'
 
 # Python: use `uv venv` and `uv sync` per project.
 # Java/Node: pin versions in `mise.toml`; pnpm is activated through Corepack.

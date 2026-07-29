@@ -139,6 +139,9 @@ install_ai_extensions() {
     run claude plugin marketplace add DietrichGebert/ponytail || failed=1
     run claude plugin install ponytail@ponytail || failed=1
   fi
+  if command_exists agy; then
+    run agy plugin install https://github.com/DietrichGebert/ponytail || failed=1
+  fi
 
   if (( failed != 0 )); then
     record_result extensions failed "CodeGraph or Ponytail installation failed"
@@ -183,11 +186,27 @@ configure_agent_instructions() {
     "${HOME}/.claude/CLAUDE.md"
     "${HOME}/.copilot/copilot-instructions.md"
     "${HOME}/.gemini/GEMINI.md"
-    "${HOME}/Library/Application Support/Code/User/prompts/macos-ai-bootstrap.instructions.md"
   )
   for instruction_file in "${targets[@]}"; do
     managed_block "$instruction_file" "shared-agent-instructions" \
       "${BOOTSTRAP_ROOT}/config/AGENTS.shared.md"
   done
+
+  local vscode_target="${HOME}/Library/Application Support/Code/User/prompts/macos-ai-bootstrap.instructions.md"
+  if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
+    log "DRY-RUN write auto-applied VS Code instructions to ${vscode_target}"
+  else
+    mkdir -p "$(dirname "$vscode_target")"
+    {
+      printf '%s\n' '---' 'applyTo: "**"' '---' ''
+      cat "${BOOTSTRAP_ROOT}/config/AGENTS.shared.md"
+    } > "${vscode_target}.tmp"
+    if [[ -f "$vscode_target" ]] && cmp -s "${vscode_target}.tmp" "$vscode_target"; then
+      rm -f "${vscode_target}.tmp"
+    else
+      [[ -f "$vscode_target" ]] && backup_file "$vscode_target"
+      mv "${vscode_target}.tmp" "$vscode_target"
+    fi
+  fi
   record_result instructions changed "shared guidance reconciled for every client"
 }

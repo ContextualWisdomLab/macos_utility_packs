@@ -53,8 +53,9 @@ PY
 )"
 assert_eq "codegraph serve --mcp" "$codegraph_command" "CodeGraph uses documented MCP command"
 
-assert_file_contains "$instructions" 'without waiting for a separate user request' "CodeGraph indexing is autonomous"
-assert_file_contains "$instructions" 'codegraph init -i' "CodeGraph indexing command is explicit"
+assert_file_contains "$instructions" 'without waiting for a separate' "CodeGraph indexing is autonomous"
+assert_file_contains "$instructions" 'codegraph init' "CodeGraph indexing command is explicit"
+assert_not_contains "$(cat "$instructions")" 'codegraph init -i' "CodeGraph guidance avoids the removed -i flag"
 assert_file_contains "$instructions" 'DietrichGebert/ponytail' "Ponytail is shared as agent guidance"
 
 target_json="${TEST_ROOT}/client.json"
@@ -88,12 +89,15 @@ for client_instructions in \
   "${HOME}/.codex/AGENTS.md" \
   "${HOME}/.claude/CLAUDE.md" \
   "${HOME}/.copilot/copilot-instructions.md" \
-  "${HOME}/.gemini/GEMINI.md" \
-  "${HOME}/Library/Application Support/Code/User/prompts/macos-ai-bootstrap.instructions.md"; do
-  assert_file_contains "$client_instructions" 'codegraph init -i' "CodeGraph guidance reaches ${client_instructions}"
+  "${HOME}/.gemini/GEMINI.md"; do
+  assert_file_contains "$client_instructions" 'codegraph init' "CodeGraph guidance reaches ${client_instructions}"
 done
+vscode_instructions="${HOME}/Library/Application Support/Code/User/prompts/macos-ai-bootstrap.instructions.md"
+assert_file_contains "$vscode_instructions" 'applyTo: "**"' "VS Code instructions apply automatically to every workspace"
+assert_file_contains "$vscode_instructions" 'codegraph init' "CodeGraph guidance reaches VS Code"
 
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'npm install --global @colbymchenry/codegraph' "CodeGraph installs through managed Node npm"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'codegraph install' "CodeGraph native client integration is installed"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'agy plugin install https://github.com/DietrichGebert/ponytail' "Ponytail uses the official Antigravity plugin installer"
 
 finish_tests

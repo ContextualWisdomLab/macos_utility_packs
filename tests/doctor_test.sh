@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
 
-mock_commands=(brew codex gh agy claude code copilot codegraph npx uvx mise uv pnpm go rustc cargo dotnet clang cmake ninja conan glances btop colima nerdctl kubectl helm k9s git openvpn caffeinate)
+mock_commands=(brew codex gh agy claude code copilot codegraph npx uvx mise uv node npm pnpm java go rustc cargo dotnet clang cmake ninja conan glances btop colima nerdctl kubectl helm k9s git openvpn caffeinate)
 for command_name in "${mock_commands[@]}"; do
   cat > "${TEST_ROOT}/bin/${command_name}" <<MOCK
 #!/usr/bin/env bash
@@ -19,6 +19,18 @@ MOCK
   chmod +x "${TEST_ROOT}/bin/${command_name}"
 done
 
+for agent_command in codex claude; do
+  cat > "${TEST_ROOT}/bin/${agent_command}" <<MOCK
+#!/usr/bin/env bash
+printf '%s %s\n' '${agent_command}' "\$*" >> '${TEST_ROOT}/commands.log'
+if [[ "\$*" == "mcp list" ]]; then
+  printf '%s\n' sequential-thinking time deepwiki context7 memory codegraph figma
+fi
+exit 0
+MOCK
+  chmod +x "${TEST_ROOT}/bin/${agent_command}"
+done
+
 mkdir -p \
   "${HOME}/.agents/skills/find-skills" \
   "${HOME}/.copilot" \
@@ -28,9 +40,9 @@ mkdir -p \
   "${HOME}/Applications/Hammerspoon.app" \
   "${HOME}/.config/macos-ai-bootstrap"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:ai-native-shell' > "${HOME}/.zshrc"
-printf '%s\n' '# BEGIN macos-ai-bootstrap:shared-agent-instructions' 'codegraph init -i' > "${HOME}/.agents/AGENTS.md"
+printf '%s\n' '# BEGIN macos-ai-bootstrap:shared-agent-instructions' 'codegraph init' 'DietrichGebert/ponytail' > "${HOME}/.agents/AGENTS.md"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.copilot/mcp-config.json"
-printf '{"mcpServers":{"context7":{"serverUrl":"https://mcp.context7.com/mcp"},"figma":{"serverUrl":"https://mcp.figma.com/mcp"}}}\n' > "${HOME}/.gemini/config/mcp_config.json"
+cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.gemini/config/mcp_config.json"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/Library/Application Support/Code/User/mcp.json"
 cp "${BOOTSTRAP_ROOT}/config/ime.lua" "${HOME}/.config/macos-ai-bootstrap/ime.lua"
 mkdir -p "${HOME}/.local/bin"
@@ -63,6 +75,16 @@ for number in $(seq -w 1 20); do
 done
 assert_file_contains "$report" '"status": "pass"' "doctor report contains passing checks"
 
+cp "${HOME}/Library/Application Support/Code/User/mcp.json" "${TEST_ROOT}/vscode-mcp.json"
+printf '{"mcpServers":{"context7":{}}}\n' > "${HOME}/Library/Application Support/Code/User/mcp.json"
+if doctor_mcp_configs; then
+  fail "MCP doctor rejects a client missing required servers"
+else
+  pass "MCP doctor rejects a client missing required servers"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+cp "${TEST_ROOT}/vscode-mcp.json" "${HOME}/Library/Application Support/Code/User/mcp.json"
+
 commands_before="$(cat "${TEST_ROOT}/commands.log")"
 assert_not_contains "$commands_before" ' install' "doctor does not install packages"
 assert_not_contains "$commands_before" ' add ' "doctor does not add configuration"
@@ -77,6 +99,15 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 assert_file_contains "$report" '"REQ-02"' "failed report still identifies Codex requirement"
 assert_file_contains "$report" '"status": "fail"' "failed report records failure"
+
+mv "${TEST_ROOT}/bin/java" "${TEST_ROOT}/java.disabled"
+if run_doctor >/dev/null; then
+  fail "missing Java runtime fails language manager requirement"
+else
+  pass "missing Java runtime fails language manager requirement"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+assert_file_contains "$report" '"REQ-11"' "language failure is mapped to REQ-11"
 
 cat > "${TEST_ROOT}/bin/git" <<MOCK
 #!/usr/bin/env bash
