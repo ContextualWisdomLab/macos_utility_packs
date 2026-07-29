@@ -1,0 +1,13 @@
+# Copied only when the user has no Colima default template.
+cpu: 4
+memory: 8
+disk: 60
+runtime: containerd
+arch: host
+vmType: vz
+mountType: virtiofs
+network:
+  address: false
+kubernetes:
+  enabled: false
+autoActivate: true

@@ -1,0 +1,8 @@
+.bootstrap-state/
+.worktrees/
+*.bak
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

@@ -1,0 +1,24 @@
+{
+  "requirements": [
+    {"id": "REQ-01", "name": "Homebrew", "evidence": ["brew command", "Homebrew phase"]},
+    {"id": "REQ-02", "name": "Codex CLI", "evidence": ["codex command", "codex cask"]},
+    {"id": "REQ-03", "name": "GitHub CLI", "evidence": ["gh command", "gh formula"]},
+    {"id": "REQ-04", "name": "Antigravity CLI", "evidence": ["agy command", "antigravity-cli cask"]},
+    {"id": "REQ-05", "name": "Claude Code CLI", "evidence": ["claude command", "claude-code cask"]},
+    {"id": "REQ-06", "name": "Visual Studio Code", "evidence": ["code command", "visual-studio-code cask"]},
+    {"id": "REQ-07", "name": "GitHub Copilot CLI", "evidence": ["copilot command", "copilot-cli cask"]},
+    {"id": "REQ-08", "name": "Shared MCP, Ponytail, and CodeGraph", "evidence": ["MCP catalog", "client adapters", "shared instructions"]},
+    {"id": "REQ-09", "name": "skills.sh shared skills", "evidence": ["~/.agents/skills", "skills report"]},
+    {"id": "REQ-10", "name": "Figma MCP", "evidence": ["official Figma remote URL", "client MCP configurations"]},
+    {"id": "REQ-11", "name": "Language environment managers", "evidence": ["mise", "uv", "pnpm", "Go Modules", "Cargo", ".NET SDK", "LLVM and Conan"]},
+    {"id": "REQ-12", "name": "AI-native shell", "evidence": ["managed .zshrc block"]},
+    {"id": "REQ-13", "name": "Monitoring tools", "evidence": ["glances", "btop"]},
+    {"id": "REQ-14", "name": "Lightweight containers", "evidence": ["Colima", "containerd/nerdctl template"]},
+    {"id": "REQ-15", "name": "Git and Git Flow", "evidence": ["git command", "main/develop branches"]},
+    {"id": "REQ-16", "name": "VPN clients", "evidence": ["OpenVPN command", "Passepartout application"]},
+    {"id": "REQ-17", "name": "Small Kubernetes lab", "evidence": ["dedicated Colima k3s profile", "kubectl", "Helm", "k9s"]},
+    {"id": "REQ-18", "name": "Korean operator manual", "evidence": ["docs/한국어-매뉴얼.md"]},
+    {"id": "REQ-19", "name": "Sebeolsik Korean IME", "evidence": ["built-in 3-Set Korean (390)", "Hammerspoon Left Shift + Space"]},
+    {"id": "REQ-20", "name": "AI process sleep prevention", "evidence": ["ai-awake", "macOS caffeinate"]}
+  ]
+}
