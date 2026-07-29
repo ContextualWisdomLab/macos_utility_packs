@@ -39,8 +39,9 @@ catalog_rows() {
 import json, sys
 items = json.load(open(sys.argv[1]))["mcpServers"]
 for name, item in sorted(items.items()):
-    args = "\x1f".join(item.get("args", []))
-    print("\x1e".join([name, item["type"], item.get("command", ""), args, item.get("url", "")]))
+    arg_list = item.get("args", [])
+    args = "\x1f".join(arg_list)
+    print("\x1e".join([name, item["type"], item.get("command", ""), args, str(len(arg_list)), item.get("url", "")]))
 PY
 }
 
@@ -69,14 +70,14 @@ configure_claude_mcp() {
     log "Claude Code is unavailable; cannot configure its MCP catalog"
     return 1
   fi
-  local name type command joined_args url
-  while IFS=$'\x1e' read -r name type command joined_args url; do
+  local name type command joined_args arg_count url
+  while IFS=$'\x1e' read -r name type command joined_args arg_count url; do
     run claude mcp remove --scope user "$name" >/dev/null 2>&1 || true
     if [[ "$type" == "http" ]]; then
       run claude mcp add --scope user --transport http "$name" "$url"
     else
       local args=()
-      if [[ -n "$joined_args" ]]; then
+      if (( arg_count > 0 )); then
         IFS=$'\x1f' read -r -a args <<< "${joined_args}_"
         local last_arg=$((${#args[@]} - 1))
         args[$last_arg]="${args[$last_arg]%_}"

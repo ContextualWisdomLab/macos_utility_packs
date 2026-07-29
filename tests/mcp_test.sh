@@ -82,17 +82,19 @@ MOCK
 chmod +x "${TEST_ROOT}/bin/claude"
 export MOCK_CLAUDE_LOG="${TEST_ROOT}/claude.log"
 catalog_rows() {
-  printf 'empty-arg\x1estdio\x1ecommand\x1e--flag\x1f\x1e\n'
+  printf 'empty-list\x1estdio\x1ecommand\x1e\x1e0\x1e\n'
+  printf 'empty-arg\x1estdio\x1ecommand\x1e\x1e1\x1e\n'
 }
 configure_claude_mcp
-assert_file_contains "$MOCK_CLAUDE_LOG" '<>' "Claude MCP preserves a trailing empty argument"
+assert_eq "1" "$(grep -Fxc '<>' "$MOCK_CLAUDE_LOG")" "Claude MCP distinguishes an empty argument from no arguments"
 source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
 
 context7_row="$(catalog_rows | grep '^context7')"
-IFS=$'\x1e' read -r row_name row_type row_command row_args row_url <<< "$context7_row"
+IFS=$'\x1e' read -r row_name row_type row_command row_args row_arg_count row_url <<< "$context7_row"
 assert_eq "context7" "$row_name" "MCP catalog row preserves HTTP server name"
 assert_eq "http" "$row_type" "MCP catalog row preserves HTTP transport"
 assert_eq "" "$row_command" "MCP catalog row preserves an empty HTTP command field"
+assert_eq "0" "$row_arg_count" "MCP catalog row preserves an empty argument list"
 assert_eq "https://mcp.context7.com/mcp" "$row_url" "MCP catalog row preserves HTTP URL after empty fields"
 
 codex_toml="${TEST_ROOT}/config.toml"
