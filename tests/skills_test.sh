@@ -12,6 +12,24 @@ discovery_output="$(
     --topic-file "${BOOTSTRAP_ROOT}/tests/fixtures/topics.html"
 )"
 
+if python3 - "${BOOTSTRAP_ROOT}/scripts/discover-skills.py" <<'PY'
+import runpy
+import sys
+
+module = runpy.run_path(sys.argv[1])
+try:
+    module["fetch_text"]("file:///etc/passwd")
+except ValueError:
+    raise SystemExit(0)
+raise SystemExit(1)
+PY
+then
+  pass "catalog fetch rejects non-HTTPS URLs"
+else
+  fail "catalog fetch rejects non-HTTPS URLs"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
 assert_contains "$discovery_output" $'vercel-labs/skills\tfind-skills' "find-skills is discovered"
 assert_contains "$discovery_output" $'openai/skills\t*' "all skills from an official repository are discovered"
 assert_contains "$discovery_output" $'obra/superpowers\tsystematic-debugging' "topic skill is discovered"

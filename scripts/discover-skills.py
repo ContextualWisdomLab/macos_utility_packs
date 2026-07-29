@@ -54,8 +54,11 @@ RETIRED_SOURCES = {
 
 
 def fetch_text(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname not in {"skills.sh", "www.skills.sh"}:
+        raise ValueError(f"unsupported catalog URL: {url}")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=30) as response:
+    with urllib.request.urlopen(request, timeout=30) as response:  # nosemgrep
         return response.read().decode("utf-8")
 
 

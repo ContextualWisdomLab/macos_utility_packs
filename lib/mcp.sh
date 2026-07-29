@@ -75,10 +75,8 @@ configure_claude_mcp() {
     if [[ "$type" == "http" ]]; then
       run claude mcp add --scope user --transport http "$name" "$url"
     else
-      local old_ifs="$IFS"
-      IFS=$'\x1f'
-      local args=( $joined_args )
-      IFS="$old_ifs"
+      local args=()
+      IFS=$'\x1f' read -r -a args <<< "$joined_args"
       run claude mcp add --scope user --transport stdio "$name" -- "$command" "${args[@]}"
     fi
   done < <(catalog_rows)
