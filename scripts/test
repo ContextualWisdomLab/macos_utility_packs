@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+bash -n bootstrap lib/*.sh tests/*.sh
+
+for test_file in tests/*_test.sh; do
+  bash "$test_file"
+done
+
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck bootstrap lib/*.sh tests/*.sh scripts/test
+fi

@@ -60,11 +60,14 @@ installs:
 
 - Git, GitHub CLI, Codex, Google Antigravity CLI, Claude Code, GitHub Copilot
   CLI, and Visual Studio Code;
-- `mise`, `uv`, `pnpm`, and JDK tooling;
+- `mise`, `uv`, `pnpm`, Node, Java, Go, Rust, .NET, LLVM, CMake, Ninja,
+  and Conan tooling;
 - `starship`, `zoxide`, `fzf`, `ripgrep`, `fd`, `bat`, `eza`, `direnv`, and
   `atuin`;
 - `glances`, `btop`, `dust`, `duf`, and `procs`;
-- Colima and the clients required for containerd/nerdctl workflows;
+- Colima, kubectl, Helm, and k9s for containerd/nerdctl and an on-demand
+  Kubernetes lab;
+- Passepartout, OpenVPN, and Hammerspoon;
 - jq and other small utilities required by the installer.
 
 Official Homebrew formulae or casks are preferred. When a requested tool is not
@@ -73,11 +76,13 @@ used only from the vendor's documented HTTPS endpoint.
 
 ## Language Isolation
 
-`mise` owns default Java and Node versions and activates them per project.
-Corepack activates package-manager shims and `pnpm` provides isolated global
-tooling. `uv` owns Python installations and virtual environments. Shell
-instructions require project-local `.venv`, `.tool-versions` or `mise.toml`,
-and package-manager lock files rather than system-wide language packages.
+`mise` owns default Java, Node, Go, Rust, and .NET versions and activates them
+per project. Corepack activates package-manager shims and `pnpm` provides
+isolated global tooling. `uv` owns Python installations and virtual
+environments. Go Modules, Cargo workspaces, .NET project files, and
+LLVM/CMake/Ninja/Conan cover the remaining ecosystems. Shell instructions
+require project-local environments, version files, and lock files rather than
+system-wide language packages.
 
 ## AI-Native Shell and Monitoring
 
@@ -86,6 +91,10 @@ that block. It initializes Homebrew, mise, uv, direnv, Starship, zoxide, atuin,
 and fzf without replacing unrelated user configuration. Useful aliases prefer
 modern tools but retain standard command behavior. Glances and companion
 monitoring tools are installed without enabling an always-running service.
+The `ai-awake` wrapper uses process-scoped `caffeinate` so the Mac stays awake
+only while Codex or Claude is running. Hammerspoon configures the built-in
+Sebeolsik 390 input source and Left Shift+Space switching after the user grants
+the required macOS Accessibility permission.
 
 ## Lightweight Containers
 
@@ -95,6 +104,11 @@ user can override through environment variables. Starting the VM is explicit
 unless the user requests autostart. The doctor command verifies both Colima and
 nerdctl and, when the runtime is running, performs a lightweight connectivity
 check.
+
+A separate `macos-ai-k8s` Colima profile provides a small, on-demand
+Kubernetes lab while leaving Kubernetes disabled in the default profile.
+Passepartout supplies the GUI VPN client and the OpenVPN formula supplies its
+CLI/backend tooling.
 
 ## Shared Skills
 
@@ -121,9 +135,11 @@ The common catalog contains:
 - DeepWiki;
 - Context7;
 - Memory;
-- Ponytail from `DietrichGebert/ponytail`;
 - CodeGraph from `colbymchenry/codegraph`;
 - the official remote Figma MCP endpoint.
+
+Ponytail is installed separately as shared agent skills and native plugins
+where clients support them; it is not represented as an MCP server.
 
 Catalog entries specify transport, command or URL, arguments, required
 environment-variable names, and a health-check method. No secret value appears
@@ -211,7 +227,7 @@ backups, credentials, and installed shared skills are excluded from Git.
 
 On a supported clean Mac, one bootstrap run installs every requested tool and
 configures every supported integration; a second run makes no unintended
-changes. `bootstrap doctor` provides direct evidence for all fifteen requested
+changes. `bootstrap doctor` provides direct evidence for all twenty requested
 areas. Authentication-dependent checks explicitly say when user login is the
 only remaining action. Tests prove configuration safety without modifying the
 operator's current machine.

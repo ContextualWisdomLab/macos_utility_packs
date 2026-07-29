@@ -1,0 +1,25 @@
+{
+  "targets": {
+    "codex": {
+      "adapter": "codex-cli"
+    },
+    "claude": {
+      "adapter": "claude-cli"
+    },
+    "antigravity": {
+      "path": "~/.gemini/config/mcp_config.json",
+      "section": "mcpServers",
+      "format": "antigravity"
+    },
+    "vscode": {
+      "path": "~/Library/Application Support/Code/User/mcp.json",
+      "section": "servers",
+      "format": "vscode"
+    },
+    "copilot": {
+      "path": "~/.copilot/mcp-config.json",
+      "section": "mcpServers",
+      "format": "generic"
+    }
+  }
+}

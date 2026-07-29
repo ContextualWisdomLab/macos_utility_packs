@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BOOTSTRAP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export BOOTSTRAP_ROOT
+export PYTHONDONTWRITEBYTECODE=1
+
+source "${BOOTSTRAP_ROOT}/lib/core.sh"
+
+usage() {
+  cat <<'USAGE'
+Usage: ./bootstrap [install|auth|doctor|skills|mcp|kubernetes] [options]
+
+Options:
+  --dry-run       Print mutations without executing them
+  --only PHASES   Run only comma-separated phases
+  --skip PHASES   Skip comma-separated phases
+  --yes           Accept non-secret prompts
+  --verbose       Enable diagnostic logging
+  -h, --help      Show this help
+USAGE
+}
+
+BOOTSTRAP_COMMAND="install"
+if [[ $# -gt 0 && "${1:0:1}" != "-" ]]; then
+  BOOTSTRAP_COMMAND="$1"
+  shift
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) BOOTSTRAP_DRY_RUN=1 ;;
+    --only)
+      shift
+      [[ $# -gt 0 ]] || die "--only requires a value"
+      BOOTSTRAP_ONLY="$1"
+      ;;
+    --skip)
+      shift
+      [[ $# -gt 0 ]] || die "--skip requires a value"
+      BOOTSTRAP_SKIP="$1"
+      ;;
+    --yes) BOOTSTRAP_YES=1 ;;
+    --verbose) BOOTSTRAP_VERBOSE=1 ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "unknown option: $1"
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+export BOOTSTRAP_DRY_RUN BOOTSTRAP_ONLY BOOTSTRAP_SKIP BOOTSTRAP_YES BOOTSTRAP_VERBOSE
+
+load_optional_module() {
+  local module="$1"
+  if [[ -f "${BOOTSTRAP_ROOT}/lib/${module}.sh" ]]; then
+    source "${BOOTSTRAP_ROOT}/lib/${module}.sh"
+  fi
+}
+
+for module in platform packages shell skills mcp ime auth doctor; do
+  load_optional_module "$module"
+done
+
+if declare -F activate_bootstrap_runtime >/dev/null 2>&1; then
+  activate_bootstrap_runtime
+fi
+
+run_phase() {
+  local phase="$1"
+  local function_name="$2"
+  if ! phase_selected "$phase"; then
+    record_result "$phase" "skipped" "phase selection"
+    return 0
+  fi
+  if ! declare -F "$function_name" >/dev/null 2>&1; then
+    die "phase ${phase} is not implemented"
+    return 1
+  fi
+  log "phase: ${phase}"
+  "$function_name"
+}
+
+case "$BOOTSTRAP_COMMAND" in
+  install)
+    run_phase preflight preflight
+    run_phase homebrew install_homebrew
+    run_phase packages install_packages
+    run_phase languages configure_languages
+    run_phase monitoring configure_monitoring
+    run_phase shell configure_shell
+    run_phase awake install_ai_awake
+    run_phase ime configure_korean_ime
+    run_phase containers configure_containers
+    run_phase skills install_shared_skills
+    run_phase extensions install_ai_extensions
+    run_phase mcp configure_mcp
+    run_phase instructions configure_agent_instructions
+    ;;
+  auth) run_phase auth run_auth ;;
+  doctor) run_phase doctor run_doctor ;;
+  skills) run_phase skills install_shared_skills ;;
+  mcp)
+    run_phase mcp configure_mcp
+    run_phase instructions configure_agent_instructions
+    ;;
+  kubernetes) run_phase kubernetes configure_kubernetes ;;
+  *)
+    die "unknown command: ${BOOTSTRAP_COMMAND}"
+    usage >&2
+    exit 2
+    ;;
+esac
