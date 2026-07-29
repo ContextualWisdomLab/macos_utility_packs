@@ -19,8 +19,9 @@ skills_list_path() {
 
 write_skills_report() {
   local installed="$1"
-  local failed="$2"
-  local failure_file="$3"
+  local skipped="$2"
+  local failed="$3"
+  local failure_file="$4"
   local report="${BOOTSTRAP_STATE_DIR}/skills-report.json"
   ensure_state_dirs
 
@@ -29,6 +30,7 @@ write_skills_report() {
     printf '  "generatedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     printf '  "canonicalDirectory": "%s",\n' "$(json_escape "${SKILLS_CANONICAL_DIR:-${HOME}/.agents/skills}")"
     printf '  "installed": %d,\n' "$installed"
+    printf '  "skipped": %d,\n' "$skipped"
     printf '  "failed": %d,\n' "$failed"
     printf '  "failures": ['
     local first=1
@@ -48,6 +50,37 @@ write_skills_report() {
     printf ']\n}\n'
   } > "${report}.tmp"
   mv "${report}.tmp" "$report"
+}
+
+skill_is_installed() {
+  local source="$1"
+  local skill="$2"
+  local canonical="${SKILLS_CANONICAL_DIR:-${HOME}/.agents/skills}"
+  local lock_file="${SKILLS_LOCK_FILE:-${HOME}/skills-lock.json}"
+
+  [[ -f "$lock_file" ]] || return 1
+  python3 - "$lock_file" "$canonical" "$source" "$skill" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+lock_path, canonical_path, source, requested = sys.argv[1:]
+try:
+    skills = json.loads(Path(lock_path).read_text()).get("skills", {})
+except (OSError, json.JSONDecodeError):
+    raise SystemExit(1)
+
+matching = [
+    name
+    for name, metadata in skills.items()
+    if isinstance(metadata, dict)
+    and metadata.get("source") == source
+    and (requested == "*" or name == requested)
+]
+if matching and all((Path(canonical_path) / name / "SKILL.md").is_file() for name in matching):
+    raise SystemExit(0)
+raise SystemExit(1)
+PY
 }
 
 install_one_skill() {
@@ -99,12 +132,15 @@ install_shared_skills() {
   local wildcard_reconciled
   wildcard_reconciled="$(mktemp "${TMPDIR:-/tmp}/skill-wildcards.XXXXXX")"
   local installed=0
+  local skipped=0
   local failed=0
   local source skill status
 
   while IFS=$'\t' read -r source skill; do
     [[ -n "$source" && -n "$skill" ]] || continue
-    if install_one_skill "$source" "$skill"; then
+    if skill_is_installed "$source" "$skill"; then
+      skipped=$((skipped + 1))
+    elif install_one_skill "$source" "$skill"; then
       installed=$((installed + 1))
     elif [[ "$skill" != "*" ]] &&
       { grep -Fxq "$source" "$wildcard_reconciled" ||
@@ -122,12 +158,16 @@ install_shared_skills() {
     fi
   done < "$list_file"
 
-  write_skills_report "$installed" "$failed" "$failures"
+  write_skills_report "$installed" "$skipped" "$failed" "$failures"
   rm -f "$failures" "$wildcard_reconciled"
 
   if (( failed > 0 )); then
     record_result skills failed "${failed} skill installation(s) failed"
     return 1
   fi
-  record_result skills changed "${installed} skills reconciled"
+  if (( installed == 0 )); then
+    record_result skills ok "${skipped} already-installed skill entries skipped"
+  else
+    record_result skills changed "${installed} skills installed; ${skipped} already installed"
+  fi
 }

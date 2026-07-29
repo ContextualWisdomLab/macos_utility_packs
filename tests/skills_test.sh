@@ -38,8 +38,25 @@ MOCK
 chmod +x "${TEST_ROOT}/bin/npx"
 export MOCK_NPX_LOG="$mock_log"
 
+mkdir -p "${HOME}/.agents/skills/find-skills" "${HOME}/.agents/skills/existing-one"
+touch "${HOME}/.agents/skills/find-skills/SKILL.md"
+touch "${HOME}/.agents/skills/existing-one/SKILL.md"
+cat > "${HOME}/skills-lock.json" <<'JSON'
+{
+  "version": 1,
+  "skills": {
+    "find-skills": {
+      "source": "vercel-labs/skills"
+    },
+    "existing-one": {
+      "source": "already/repo"
+    }
+  }
+}
+JSON
+
 skills_list="${TEST_ROOT}/skills.tsv"
-printf 'vercel-labs/skills\tfind-skills\nopenai/skills\tdocs\nrenamed/repo\told-name\nbad/repo\tbroken-skill\n' > "$skills_list"
+printf 'vercel-labs/skills\tfind-skills\nalready/repo\t*\nopenai/skills\tdocs\nrenamed/repo\told-name\nbad/repo\tbroken-skill\n' > "$skills_list"
 export SKILLS_LIST_FILE="$skills_list"
 export SKILLS_CANONICAL_DIR="${HOME}/.agents/skills"
 
@@ -54,7 +71,8 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
 npx_calls="$(cat "$mock_log")"
-assert_contains "$npx_calls" 'vercel-labs/skills --skill find-skills' "find-skills is explicitly installed"
+assert_not_contains "$npx_calls" 'vercel-labs/skills --skill find-skills' "installed named skill is not reinstalled"
+assert_not_contains "$npx_calls" 'already/repo --skill *' "installed wildcard source is not reinstalled"
 assert_contains "$npx_calls" '--agent universal' "shared universal agent target is selected"
 assert_contains "$npx_calls" '--agent codex' "Codex skill target is selected"
 assert_contains "$npx_calls" '--agent claude-code' "Claude skill target is selected"
@@ -64,7 +82,8 @@ assert_contains "$npx_calls" 'renamed/repo --skill *' "stale topic names fall ba
 
 report="${BOOTSTRAP_STATE_DIR}/skills-report.json"
 assert_file_contains "$report" '"failed": 1' "failure count is reported"
-assert_file_contains "$report" '"installed": 3' "fallback success count is reported"
+assert_file_contains "$report" '"installed": 2' "new and fallback installations are reported"
+assert_file_contains "$report" '"skipped": 2' "already-installed entries are reported"
 assert_file_contains "$report" '"skill": "broken-skill"' "failed skill is named"
 
 finish_tests
