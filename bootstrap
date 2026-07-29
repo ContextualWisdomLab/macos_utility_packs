@@ -69,6 +69,10 @@ for module in platform packages shell skills mcp ime auth doctor; do
   load_optional_module "$module"
 done
 
+if declare -F activate_bootstrap_runtime >/dev/null 2>&1; then
+  activate_bootstrap_runtime
+fi
+
 run_phase() {
   local phase="$1"
   local function_name="$2"
@@ -90,6 +94,7 @@ case "$BOOTSTRAP_COMMAND" in
     run_phase homebrew install_homebrew
     run_phase packages install_packages
     run_phase languages configure_languages
+    run_phase monitoring configure_monitoring
     run_phase shell configure_shell
     run_phase awake install_ai_awake
     run_phase ime configure_korean_ime

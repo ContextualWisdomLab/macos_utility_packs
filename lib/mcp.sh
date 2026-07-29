@@ -40,7 +40,7 @@ import json, sys
 items = json.load(open(sys.argv[1]))["mcpServers"]
 for name, item in sorted(items.items()):
     args = "\x1f".join(item.get("args", []))
-    print("\t".join([name, item["type"], item.get("command", ""), args, item.get("url", "")]))
+    print("\x1e".join([name, item["type"], item.get("command", ""), args, item.get("url", "")]))
 PY
 }
 
@@ -53,19 +53,11 @@ configure_codex_mcp() {
     log "Codex is unavailable; cannot configure its MCP catalog"
     return 1
   fi
-  local name type command joined_args url
-  while IFS=$'\t' read -r name type command joined_args url; do
-    run codex mcp remove "$name" >/dev/null 2>&1 || true
-    if [[ "$type" == "http" ]]; then
-      run codex mcp add "$name" --url "$url"
-    else
-      local old_ifs="$IFS"
-      IFS=$'\x1f'
-      local args=( $joined_args )
-      IFS="$old_ifs"
-      run codex mcp add "$name" -- "$command" "${args[@]}"
-    fi
-  done < <(catalog_rows)
+  local target="${HOME}/.codex/config.toml"
+  [[ -f "$target" ]] && backup_file "$target"
+  run python3 "${BOOTSTRAP_ROOT}/scripts/merge-codex-mcp.py" \
+    --target "$target" \
+    --catalog "$(mcp_catalog_path)"
 }
 
 configure_claude_mcp() {
@@ -78,7 +70,7 @@ configure_claude_mcp() {
     return 1
   fi
   local name type command joined_args url
-  while IFS=$'\t' read -r name type command joined_args url; do
+  while IFS=$'\x1e' read -r name type command joined_args url; do
     run claude mcp remove --scope user "$name" >/dev/null 2>&1 || true
     if [[ "$type" == "http" ]]; then
       run claude mcp add --scope user --transport http "$name" "$url"
@@ -128,15 +120,18 @@ install_ai_extensions() {
   fi
 
   if command_exists codex; then
-    run codex plugin marketplace add DietrichGebert/ponytail || failed=1
+    run codex plugin marketplace add DietrichGebert/ponytail ||
+      log "Codex Ponytail marketplace is already present or could not be refreshed; continuing with plugin reconciliation"
     run codex plugin add ponytail@ponytail || failed=1
   fi
   if command_exists copilot; then
-    run copilot plugin marketplace add DietrichGebert/ponytail || failed=1
+    run copilot plugin marketplace add DietrichGebert/ponytail ||
+      log "Copilot Ponytail marketplace is already present or could not be refreshed; continuing with plugin reconciliation"
     run copilot plugin install ponytail@ponytail || failed=1
   fi
   if command_exists claude; then
-    run claude plugin marketplace add DietrichGebert/ponytail || failed=1
+    run claude plugin marketplace add DietrichGebert/ponytail ||
+      log "Claude Ponytail marketplace is already present or could not be refreshed; continuing with plugin reconciliation"
     run claude plugin install ponytail@ponytail || failed=1
   fi
   if command_exists agy; then

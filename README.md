@@ -18,6 +18,7 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 - 패키지는 가능한 한 Homebrew `Brewfile`로 설치합니다.
 - 기존 dotfile과 클라이언트 설정의 관리 대상 외 항목은 보존합니다.
 - 토큰과 로그인 정보는 저장소에 저장하지 않습니다.
+- Glances는 `uv`의 `glances[all]`로 모든 선택 통합을 포함해 설치합니다.
 - Docker Desktop과 Podman 대신 Colima의 containerd/nerdctl을 사용합니다.
 - Kubernetes는 요청할 때만 별도 Colima 프로필로 시작합니다.
 - 설치 전 `--dry-run`, 설치 후 `doctor` 사용을 권장합니다.

@@ -74,6 +74,26 @@ assert_file_contains "$target_json" '"figma"' "MCP merge adds managed servers"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
+context7_row="$(catalog_rows | grep '^context7')"
+IFS=$'\x1e' read -r row_name row_type row_command row_args row_url <<< "$context7_row"
+assert_eq "context7" "$row_name" "MCP catalog row preserves HTTP server name"
+assert_eq "http" "$row_type" "MCP catalog row preserves HTTP transport"
+assert_eq "" "$row_command" "MCP catalog row preserves an empty HTTP command field"
+assert_eq "https://mcp.context7.com/mcp" "$row_url" "MCP catalog row preserves HTTP URL after empty fields"
+
+codex_toml="${TEST_ROOT}/config.toml"
+printf '%s\n' '[projects."/tmp/example"]' 'trust_level = "trusted"' \
+  '[mcp_servers.context7]' 'url = ""' > "$codex_toml"
+python3 "${BOOTSTRAP_ROOT}/scripts/merge-codex-mcp.py" \
+  --target "$codex_toml" --catalog "$catalog"
+codex_first_hash="$(shasum -a 256 "$codex_toml" | awk '{print $1}')"
+python3 "${BOOTSTRAP_ROOT}/scripts/merge-codex-mcp.py" \
+  --target "$codex_toml" --catalog "$catalog"
+codex_second_hash="$(shasum -a 256 "$codex_toml" | awk '{print $1}')"
+assert_eq "$codex_first_hash" "$codex_second_hash" "Codex TOML MCP merge is byte-idempotent"
+assert_file_contains "$codex_toml" 'trust_level = "trusted"' "Codex TOML MCP merge preserves unrelated settings"
+assert_file_contains "$codex_toml" 'url = "https://mcp.context7.com/mcp"' "Codex TOML MCP merge writes the remote URL"
+assert_eq "1" "$(grep -Fxc '[mcp_servers.context7]' "$codex_toml")" "Codex TOML MCP merge replaces stale managed sections"
 BOOTSTRAP_DRY_RUN=0
 export MCP_TARGETS_FILE="${BOOTSTRAP_ROOT}/tests/fixtures/mcp-targets.json"
 configure_mcp >/dev/null
@@ -98,6 +118,8 @@ assert_file_contains "$vscode_instructions" 'codegraph init' "CodeGraph guidance
 
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'npm install --global @colbymchenry/codegraph' "CodeGraph installs through managed Node npm"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'codegraph install' "CodeGraph native client integration is installed"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'merge-codex-mcp.py' "Codex MCP configuration does not trigger OAuth during installation"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'continuing with plugin reconciliation' "existing plugin marketplaces do not break idempotent reruns"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'agy plugin install https://github.com/DietrichGebert/ponytail' "Ponytail uses the official Antigravity plugin installer"
 
 finish_tests

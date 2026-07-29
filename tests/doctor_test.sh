@@ -39,11 +39,17 @@ mkdir -p \
   "${HOME}/Applications/Passepartout.app" \
   "${HOME}/Applications/Hammerspoon.app" \
   "${HOME}/.config/macos-ai-bootstrap"
+mkdir -p "${HOME}/.local/share/uv/tools/glances"
+printf '%s\n' '[tool]' 'requirements = [{ name = "glances", extras = ["all"] }]' \
+  > "${HOME}/.local/share/uv/tools/glances/uv-receipt.toml"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:ai-native-shell' > "${HOME}/.zshrc"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:shared-agent-instructions' 'codegraph init' 'DietrichGebert/ponytail' > "${HOME}/.agents/AGENTS.md"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.copilot/mcp-config.json"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.gemini/config/mcp_config.json"
-cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/Library/Application Support/Code/User/mcp.json"
+python3 "${BOOTSTRAP_ROOT}/scripts/merge-mcp.py" \
+  --target "${HOME}/Library/Application Support/Code/User/mcp.json" \
+  --catalog "${BOOTSTRAP_ROOT}/config/mcp-servers.json" \
+  --section servers --format vscode
 cp "${BOOTSTRAP_ROOT}/config/ime.lua" "${HOME}/.config/macos-ai-bootstrap/ime.lua"
 mkdir -p "${HOME}/.local/bin"
 cp "${BOOTSTRAP_ROOT}/bin/ai-awake" "${HOME}/.local/bin/ai-awake"
@@ -89,6 +95,8 @@ commands_before="$(cat "${TEST_ROOT}/commands.log")"
 assert_not_contains "$commands_before" ' install' "doctor does not install packages"
 assert_not_contains "$commands_before" ' add ' "doctor does not add configuration"
 assert_not_contains "$commands_before" ' init ' "doctor does not initialize CodeGraph"
+
+assert_file_contains "$report" 'glances[all] uv tool' "doctor reports Glances all extras evidence"
 
 mv "${TEST_ROOT}/bin/codex" "${TEST_ROOT}/codex.disabled"
 if run_doctor >/dev/null; then

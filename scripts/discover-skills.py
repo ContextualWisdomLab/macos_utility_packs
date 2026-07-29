@@ -30,6 +30,27 @@ RESERVED_ROUTES = {
     "topic",
     "trending",
 }
+# Upstream repositories sometimes retire a skills.sh-listed location and leave
+# an explicit migration notice behind. Normalize those entries to the current
+# installable source so a stale catalog snapshot does not make bootstrap fail.
+MIGRATED_SOURCES = {
+    "dagster-io/erk": ("dagster-io/skills", "*"),
+    "flutter/website": ("flutter/agent-plugins", "*"),
+    "microsoft/agent-governance-toolkit": ("microsoft/skills", "*"),
+    "microsoft/fastcontext": ("microsoft/skills", "*"),
+    "vercel-labs/next-skills": ("vercel/next.js", "*"),
+}
+# These catalog cards currently point at deleted/private repositories or public
+# repositories that contain no valid SKILL.md even with full-depth discovery.
+# There is therefore no installable artifact to reconcile until skills.sh or
+# the publisher restores one.
+RETIRED_SOURCES = {
+    "mapbox/mcp-devkit-server",
+    "prisma/prisma-cli",
+    "sanity-io/pkg-utils",
+    "stripe/com",
+    "vercel-labs/next-docs-agentic-rag",
+}
 
 
 def fetch_text(url: str) -> str:
@@ -126,6 +147,16 @@ def topic_skills(documents: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
     return result
 
 
+def normalize_migrations(
+    skills: set[tuple[str, str]],
+) -> set[tuple[str, str]]:
+    return {
+        MIGRATED_SOURCES.get(source, (source, slug))
+        for source, slug in skills
+        if source not in RETIRED_SOURCES
+    }
+
+
 def live_official_documents() -> list[tuple[str, str]]:
     index = fetch_text(OFFICIAL_URL)
     creators = sorted(
@@ -164,7 +195,9 @@ def main() -> int:
         topics = [(path.read_text(), TOPICS_URL) for path in args.topic_file]
     else:
         topics = live_topic_documents()
-    skills = official_repositories(official) | topic_skills(topics)
+    skills = normalize_migrations(
+        official_repositories(official) | topic_skills(topics)
+    )
     skills.add(("vercel-labs/skills", "find-skills"))
     wildcard_sources = {source for source, skill in skills if skill == "*"}
     skills = {

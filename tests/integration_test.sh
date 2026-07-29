@@ -37,12 +37,14 @@ output="$(
 after="$(find "$HOME" -type f -print | sort)"
 
 assert_eq "$before" "$after" "full dry-run does not mutate HOME"
-for phase in preflight homebrew packages languages shell awake ime containers skills extensions mcp instructions; do
+for phase in preflight homebrew packages languages monitoring shell awake ime containers skills extensions mcp instructions; do
   assert_contains "$output" "phase: ${phase}" "full dry-run visits ${phase}"
 done
 assert_contains "$output" 'brew bundle' "package installation is planned through Homebrew"
+assert_contains "$output" 'Glances with all optional integrations' "Glances all extras installation is planned"
 assert_contains "$output" 'Official and Topic skills' "dynamic skills refresh is planned"
 assert_contains "$output" 'MCP catalog' "MCP reconciliation is planned"
+assert_file_contains "${BOOTSTRAP_ROOT}/bootstrap" 'activate_bootstrap_runtime' "standalone commands activate mise runtimes"
 
 help_output="$(bash "${BOOTSTRAP_ROOT}/bootstrap" --help)"
 assert_contains "$help_output" 'kubernetes' "help documents Kubernetes command"

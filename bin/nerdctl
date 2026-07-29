@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+command -v colima >/dev/null 2>&1 || {
+  printf 'nerdctl wrapper: colima is not installed\n' >&2
+  exit 127
+}
+
+exec colima nerdctl -- "$@"

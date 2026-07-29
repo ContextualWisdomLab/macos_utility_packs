@@ -64,7 +64,7 @@ install_one_skill() {
         --agent antigravity \
         --agent antigravity-cli \
         --agent github-copilot \
-        --yes
+        --yes < /dev/null
   )
 }
 
@@ -96,6 +96,8 @@ install_shared_skills() {
   ensure_state_dirs
   local failures
   failures="$(mktemp "${TMPDIR:-/tmp}/skill-failures.XXXXXX")"
+  local wildcard_reconciled
+  wildcard_reconciled="$(mktemp "${TMPDIR:-/tmp}/skill-wildcards.XXXXXX")"
   local installed=0
   local failed=0
   local source skill status
@@ -103,6 +105,15 @@ install_shared_skills() {
   while IFS=$'\t' read -r source skill; do
     [[ -n "$source" && -n "$skill" ]] || continue
     if install_one_skill "$source" "$skill"; then
+      installed=$((installed + 1))
+    elif [[ "$skill" != "*" ]] &&
+      { grep -Fxq "$source" "$wildcard_reconciled" ||
+        install_one_skill "$source" "*"; }; then
+      # skills.sh topic entries can briefly retain an old name after its
+      # repository renames or consolidates a skill. Installing every current
+      # skill from that same source preserves the requested catalog coverage.
+      grep -Fxq "$source" "$wildcard_reconciled" ||
+        printf '%s\n' "$source" >> "$wildcard_reconciled"
       installed=$((installed + 1))
     else
       status=$?
@@ -112,7 +123,7 @@ install_shared_skills() {
   done < "$list_file"
 
   write_skills_report "$installed" "$failed" "$failures"
-  rm -f "$failures"
+  rm -f "$failures" "$wildcard_reconciled"
 
   if (( failed > 0 )); then
     record_result skills failed "${failed} skill installation(s) failed"

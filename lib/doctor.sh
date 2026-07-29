@@ -63,7 +63,7 @@ PY
   done
   doctor_json_has_all_mcp "${HOME}/.copilot/mcp-config.json" || return 1
   doctor_json_has_all_mcp "${HOME}/.gemini/config/mcp_config.json" || return 1
-  doctor_json_has_all_mcp "${HOME}/Library/Application Support/Code/User/mcp.json" || return 1
+  doctor_json_has_all_mcp "${HOME}/Library/Application Support/Code/User/mcp.json" servers || return 1
   doctor_file_contains "${HOME}/.agents/AGENTS.md" "codegraph init" &&
     doctor_file_contains "${HOME}/.agents/AGENTS.md" "DietrichGebert/ponytail"
 }
@@ -79,6 +79,13 @@ doctor_figma() {
     doctor_file_contains "${HOME}/.copilot/mcp-config.json" "figma" &&
     doctor_file_contains "${HOME}/.gemini/config/mcp_config.json" "figma" &&
     doctor_file_contains "${HOME}/Library/Application Support/Code/User/mcp.json" "figma"
+}
+
+doctor_glances_all() {
+  local receipt="${HOME}/.local/share/uv/tools/glances/uv-receipt.toml"
+  command_exists glances &&
+    doctor_file_contains "$receipt" 'name = "glances"' &&
+    doctor_file_contains "$receipt" 'extras = ["all"]'
 }
 
 doctor_git_flow() {
@@ -158,9 +165,11 @@ run_doctor() {
   doctor_file_contains "${HOME}/.zshrc" "BEGIN macos-ai-bootstrap:ai-native-shell" &&
     doctor_add REQ-12 AI-native-shell pass "managed zsh block is present" ||
     doctor_add REQ-12 AI-native-shell fail "managed zsh block is missing"
-  doctor_has_commands glances btop &&
-    doctor_add REQ-13 Monitoring pass "glances and btop are available" ||
-    doctor_add REQ-13 Monitoring fail "monitoring commands are missing"
+  if doctor_has_commands btop && doctor_glances_all; then
+    doctor_add REQ-13 Monitoring pass "glances[all] uv tool and btop are available"
+  else
+    doctor_add REQ-13 Monitoring fail "glances[all] receipt or monitoring commands are missing"
+  fi
   if doctor_has_commands colima nerdctl &&
     doctor_file_contains "${BOOTSTRAP_ROOT}/config/colima.yaml" "runtime: containerd"; then
     doctor_add REQ-14 Containers pass "Colima containerd and nerdctl are available"

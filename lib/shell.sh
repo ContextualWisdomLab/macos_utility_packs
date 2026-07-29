@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+activate_bootstrap_runtime() {
+  case ":${PATH}:" in
+    *":${HOME}/.local/bin:"*) ;;
+    *) export PATH="${HOME}/.local/bin:${PATH}" ;;
+  esac
+  if command_exists mise; then
+    eval "$(mise activate bash)"
+    hash -r
+  fi
+}
+
 configure_languages() {
   if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
     log "DRY-RUN configure mise Node, Java, Go, Rust, .NET, uv, pnpm, and Conan"
@@ -15,8 +26,7 @@ configure_languages() {
     run mise use -g rust@stable || failed=1
     run mise use -g dotnet@8 || failed=1
     # Make the newly installed runtimes available to later phases in this run.
-    eval "$(mise activate bash)"
-    hash -r
+    activate_bootstrap_runtime
   else
     log "mise is not installed; packages phase must complete first"
     failed=1
@@ -44,6 +54,24 @@ configure_languages() {
   record_result languages changed "mise Node, Java, Go, Rust, .NET; Corepack/pnpm; uv; Conan"
 }
 
+configure_monitoring() {
+  if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
+    log "DRY-RUN install Glances with all optional integrations through uv"
+    record_result monitoring changed "planned glances[all] uv tool installation"
+    return 0
+  fi
+  if ! command_exists uv; then
+    log "uv is not installed; packages phase must complete first"
+    record_result monitoring failed "uv missing for glances[all]"
+    return 1
+  fi
+
+  # Homebrew supplies the base command and supporting system libraries. The
+  # user-local uv tool takes PATH precedence and provides every Glances extra.
+  run uv tool install --python 3.13 --force 'glances[all]'
+  record_result monitoring changed "glances[all] installed as a user-local uv tool"
+}
+
 install_ai_awake() {
   local source_file="${BOOTSTRAP_ROOT}/bin/ai-awake"
   local target="${HOME}/.local/bin/ai-awake"
@@ -68,26 +96,23 @@ configure_shell() {
 configure_containers() {
   local source_file="${BOOTSTRAP_ROOT}/config/colima.yaml"
   local target="${HOME}/.colima/_templates/default.yaml"
+  local nerdctl_source="${BOOTSTRAP_ROOT}/bin/nerdctl"
+  local nerdctl_target="${HOME}/.local/bin/nerdctl"
   [[ -f "$source_file" ]] || die "missing Colima template: ${source_file}"
+  [[ -f "$nerdctl_source" ]] || die "missing nerdctl wrapper: ${nerdctl_source}"
 
   if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
     log "DRY-RUN install Colima containerd template at ${target}"
-    log "DRY-RUN install Colima bundled nerdctl PATH wrapper"
+    log "DRY-RUN install user-local nerdctl wrapper at ${nerdctl_target}"
   else
     if [[ ! -e "$target" ]]; then
       mkdir -p "$(dirname "$target")"
       cp "$source_file" "$target"
     fi
-    if ! command_exists nerdctl; then
-      command_exists colima || {
-        record_result containers failed "Colima is unavailable"
-        return 1
-      }
-      run colima nerdctl install || {
-        record_result containers failed "nerdctl wrapper installation failed"
-        return 1
-      }
-      hash -r
+    if [[ ! -f "$nerdctl_target" ]] || ! cmp -s "$nerdctl_source" "$nerdctl_target"; then
+      mkdir -p "$(dirname "$nerdctl_target")"
+      cp "$nerdctl_source" "$nerdctl_target"
+      chmod +x "$nerdctl_target"
     fi
   fi
   record_result containers changed "Colima configured for containerd/nerdctl"
