@@ -76,7 +76,11 @@ configure_claude_mcp() {
       run claude mcp add --scope user --transport http "$name" "$url"
     else
       local args=()
-      IFS=$'\x1f' read -r -a args <<< "$joined_args"
+      if [[ -n "$joined_args" ]]; then
+        IFS=$'\x1f' read -r -a args <<< "${joined_args}_"
+        local last_arg=$((${#args[@]} - 1))
+        args[$last_arg]="${args[$last_arg]%_}"
+      fi
       run claude mcp add --scope user --transport stdio "$name" -- "$command" "${args[@]}"
     fi
   done < <(catalog_rows)

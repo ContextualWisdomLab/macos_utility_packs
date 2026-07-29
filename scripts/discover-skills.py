@@ -53,12 +53,25 @@ RETIRED_SOURCES = {
 }
 
 
-def fetch_text(url: str) -> str:
+def validate_catalog_url(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme != "https" or parsed.hostname not in {"skills.sh", "www.skills.sh"}:
         raise ValueError(f"unsupported catalog URL: {url}")
+
+
+class CatalogRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        validate_catalog_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+CATALOG_OPENER = urllib.request.build_opener(CatalogRedirectHandler)
+
+
+def fetch_text(url: str) -> str:
+    validate_catalog_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=30) as response:  # nosemgrep
+    with CATALOG_OPENER.open(request, timeout=30) as response:  # nosemgrep
         return response.read().decode("utf-8")
 
 

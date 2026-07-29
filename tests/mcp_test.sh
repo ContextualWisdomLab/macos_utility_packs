@@ -74,6 +74,20 @@ assert_file_contains "$target_json" '"figma"' "MCP merge adds managed servers"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
+
+cat > "${TEST_ROOT}/bin/claude" <<'MOCK'
+#!/usr/bin/env bash
+printf '<%s>\n' "$@" >> "$MOCK_CLAUDE_LOG"
+MOCK
+chmod +x "${TEST_ROOT}/bin/claude"
+export MOCK_CLAUDE_LOG="${TEST_ROOT}/claude.log"
+catalog_rows() {
+  printf 'empty-arg\x1estdio\x1ecommand\x1e--flag\x1f\x1e\n'
+}
+configure_claude_mcp
+assert_file_contains "$MOCK_CLAUDE_LOG" '<>' "Claude MCP preserves a trailing empty argument"
+source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
+
 context7_row="$(catalog_rows | grep '^context7')"
 IFS=$'\x1e' read -r row_name row_type row_command row_args row_url <<< "$context7_row"
 assert_eq "context7" "$row_name" "MCP catalog row preserves HTTP server name"

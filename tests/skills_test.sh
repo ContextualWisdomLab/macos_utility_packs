@@ -17,16 +17,22 @@ import runpy
 import sys
 
 module = runpy.run_path(sys.argv[1])
-try:
-    module["fetch_text"]("file:///etc/passwd")
-except ValueError:
-    raise SystemExit(0)
-raise SystemExit(1)
+for action in (
+    lambda: module["fetch_text"]("file:///etc/passwd"),
+    lambda: module["CatalogRedirectHandler"]().redirect_request(
+        None, None, 302, "", {}, "https://example.com/catalog"
+    ),
+):
+    try:
+        action()
+    except ValueError:
+        continue
+    raise SystemExit(1)
 PY
 then
-  pass "catalog fetch rejects non-HTTPS URLs"
+  pass "catalog fetch rejects unsafe initial and redirect URLs"
 else
-  fail "catalog fetch rejects non-HTTPS URLs"
+  fail "catalog fetch rejects unsafe initial and redirect URLs"
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
