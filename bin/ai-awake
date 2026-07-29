@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+  printf 'Usage: ai-awake <command> [arguments...]\n' >&2
+  exit 2
+fi
+
+if [[ "$1" == "caffeinate" || "$1" == "ai-awake" ]]; then
+  printf 'ai-awake refuses recursive invocation\n' >&2
+  exit 2
+fi
+
+exec caffeinate -dimsu "$@"

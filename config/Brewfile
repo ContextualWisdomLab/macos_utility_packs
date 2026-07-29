@@ -1,0 +1,49 @@
+# Foundation and installer dependencies
+brew "git"
+brew "gh"
+brew "jq"
+brew "node@24"
+brew "python@3.14"
+
+# Language and project isolation
+brew "mise"
+brew "uv"
+brew "pnpm"
+brew "llvm"
+brew "cmake"
+brew "ninja"
+brew "conan"
+
+# AI-native shell
+brew "starship"
+brew "zoxide"
+brew "fzf"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "direnv"
+brew "atuin"
+
+# Observability
+brew "glances"
+brew "btop"
+brew "dust"
+brew "duf"
+brew "procs"
+
+# Lightweight container runtime (containerd/nerdctl through Colima)
+brew "colima"
+brew "kubectl"
+brew "helm"
+brew "k9s"
+brew "openvpn"
+
+# AI developer applications and CLIs
+cask "codex"
+cask "antigravity-cli"
+cask "claude-code"
+cask "visual-studio-code"
+cask "copilot-cli"
+cask "passepartout"
+cask "hammerspoon"

@@ -1,0 +1,14 @@
+{
+  "targets": {
+    "copilot": {
+      "path": "~/.copilot/mcp-config.json",
+      "section": "mcpServers",
+      "format": "generic"
+    },
+    "antigravity": {
+      "path": "~/.gemini/config/mcp_config.json",
+      "section": "mcpServers",
+      "format": "antigravity"
+    }
+  }
+}

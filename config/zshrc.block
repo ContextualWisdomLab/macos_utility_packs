@@ -1,0 +1,32 @@
+# Homebrew on Apple Silicon and Intel.
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# User-level tools installed by vendor installers or language managers.
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+export UV_PROJECT_ENVIRONMENT=".venv"
+export PNPM_HOME="$HOME/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook zsh)"
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh)"
+command -v fzf >/dev/null 2>&1 && source <(fzf --zsh)
+
+# AI developer quality-of-life defaults.
+alias cat='bat --paging=never'
+alias ls='eza'
+alias ll='eza -la --git'
+alias find='fd'
+alias top='btop'
+
+# Python: use `uv venv` and `uv sync` per project.
+# Java/Node: pin versions in `mise.toml`; pnpm is activated through Corepack.

@@ -4,7 +4,7 @@
 
 **Goal:** Build an idempotent macOS bootstrap command that installs and verifies the requested AI developer toolchain, shared MCP catalog, shared agent skills, shell, language, monitoring, and lightweight container environment.
 
-**Architecture:** A strict Bash orchestrator loads small phase modules and declarative TSV/JSON manifests. Configuration mutations are isolated behind reusable managed-block and structured-merge helpers, while read-only doctor checks map directly to all fifteen requirements.
+**Architecture:** A strict Bash orchestrator loads small phase modules and declarative JSON manifests. Configuration mutations are isolated behind reusable managed-block and structured-merge helpers, while read-only doctor checks map directly to all twenty requirements.
 
 **Tech Stack:** Bash 3.2-compatible shell, Homebrew Bundle, jq, Node-based skills CLI, Bats-compatible shell tests without a Bats dependency, JSON/TOML client configuration, Markdown documentation.
 
@@ -15,6 +15,10 @@
 - Preserve unrelated user configuration, skills, packages, and containers.
 - Default installation excludes interactive authentication.
 - Use Colima with containerd and nerdctl; do not install Docker Desktop or Podman.
+- Provide a separate, on-demand Colima Kubernetes profile.
+- Install Passepartout/OpenVPN and a built-in Sebeolsik 390 toggle via Hammerspoon.
+- Keep the Mac awake only for the lifetime of an `ai-awake` child process.
+- Cover Python, Java, Node, Go, Rust, .NET/C#, and C/C++ with isolated tooling.
 - Keep `${HOME}/.agents/skills` as the canonical shared skill directory.
 - CodeGraph instructions must require autonomous indexing when absent or stale.
 - Every mutation must support dry-run behavior and safe reruns.
@@ -26,6 +30,7 @@
 - `lib/platform.sh`: macOS, architecture, Xcode tools, and Homebrew setup.
 - `lib/packages.sh`: Brewfile and requested package installation.
 - `lib/shell.sh`: managed zsh block, language manager activation, and container template.
+- `lib/ime.sh`: non-destructive Hammerspoon and Sebeolsik integration.
 - `lib/skills.sh`: skills.sh discovery, deduplication, installation, and reporting.
 - `lib/mcp.sh`: common MCP catalog reconciliation and client adapters.
 - `lib/auth.sh`: explicit interactive authentication flows.
@@ -33,6 +38,8 @@
 - `config/Brewfile`: formulas and casks.
 - `config/mcp-servers.json`: secret-free common MCP catalog.
 - `config/agent-targets.json`: supported client capabilities and locations.
+- `bin/ai-awake`: process-scoped macOS sleep-prevention wrapper.
+- `docs/한국어-매뉴얼.md`: complete Korean operator manual.
 - `config/zshrc.block`: managed AI-native shell configuration.
 - `config/AGENTS.shared.md`: shared behavior including CodeGraph indexing.
 - `scripts/discover-skills.mjs`: official/topic page discovery.
@@ -133,7 +140,8 @@ git commit -m "feat: install platform foundations and developer packages"
 
 **Interfaces:**
 - Consumes: `managed_block`, `run`, `record_result`, package commands.
-- Produces: `configure_languages`, `configure_shell`, and `configure_containers`.
+- Produces: `configure_languages`, `configure_shell`, `configure_containers`,
+  `configure_kubernetes`, and `install_ai_awake`.
 
 - [ ] **Step 1: Write failing shell tests**
 
@@ -146,7 +154,10 @@ Expected: nonzero because the shell module and templates are absent.
 
 - [ ] **Step 3: Implement shell, language, and container configuration**
 
-Install Node 24 LTS and Temurin JDK 21 through mise, activate Corepack, keep Python environments project-local through uv, add the delimited zsh block, and copy a non-autostart Colima containerd template without overwriting an existing user profile.
+Install Node 24 LTS, Temurin JDK 21, Go, Rust, and .NET 8 through mise,
+activate Corepack, keep Python environments project-local through uv, add the
+delimited zsh block and process-scoped awake wrapper, and copy non-autostart
+Colima templates without overwriting an existing user profile.
 
 - [ ] **Step 4: Run focused tests twice**
 
@@ -250,11 +261,11 @@ git commit -m "feat: share MCP servers across AI developer clients"
 
 **Interfaces:**
 - Consumes: every installed command and configuration artifact.
-- Produces: `run_auth`, `run_doctor`, human-readable status, `${BOOTSTRAP_STATE_DIR}/doctor.json`, and requirement IDs `REQ-01` through `REQ-15`.
+- Produces: `run_auth`, `run_doctor`, human-readable status, `${BOOTSTRAP_STATE_DIR}/doctor.json`, and requirement IDs `REQ-01` through `REQ-20`.
 
 - [ ] **Step 1: Write failing doctor tests**
 
-Mock commands and configs to prove all fifteen requirement IDs appear, missing binaries fail, authentication-required is distinct from missing configuration, and doctor never invokes a mutating command.
+Mock commands and configs to prove all twenty requirement IDs appear, missing binaries fail, authentication-required is distinct from missing configuration, and doctor never invokes a mutating command.
 
 - [ ] **Step 2: Run test and observe failure**
 
@@ -268,7 +279,7 @@ Auth invokes only interactive vendor login commands after confirmation. Doctor c
 - [ ] **Step 4: Run focused tests**
 
 Run: `bash tests/doctor_test.sh`
-Expected: all fifteen mapped checks pass in the complete fixture and fail precisely in incomplete fixtures.
+Expected: all twenty mapped checks pass in the complete fixture and fail precisely in incomplete fixtures.
 
 - [ ] **Step 5: Commit**
 
@@ -321,7 +332,7 @@ git commit -m "docs: document and verify macOS bootstrap workflow"
 - Modify only files implicated by audit findings.
 
 **Interfaces:**
-- Consumes: original fifteen requirements, design, code, tests, and Git state.
+- Consumes: original twenty requirements, design, code, tests, and Git state.
 - Produces: direct evidence for every requirement and a clean tested feature branch.
 
 - [ ] **Step 1: Run full validation from a clean temporary HOME**
@@ -337,7 +348,7 @@ Expected: zero exit status.
 - [ ] **Step 3: Map evidence to all requirements**
 
 Run: `./bootstrap doctor --dry-run` and inspect `config/requirements.json`, `config/Brewfile`, `config/mcp-servers.json`, the shared instruction template, and tests.
-Expected: REQ-01 through REQ-15 each have implementation and verification evidence.
+Expected: REQ-01 through REQ-20 each have implementation and verification evidence.
 
 - [ ] **Step 4: Inspect Git Flow and working tree**
 
