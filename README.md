@@ -8,6 +8,7 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 ./bootstrap
 ./bootstrap auth
 ./bootstrap doctor
+./bootstrap doctor --json
 ```
 
 전체 설명과 운영 방법은 [한국어 매뉴얼](docs/한국어-매뉴얼.md)을
@@ -35,6 +36,19 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 | `./bootstrap auth` | 대화형 로그인 |
 | `./bootstrap kubernetes` | 소규모 k3s 실습 프로필 시작 |
 | `./bootstrap doctor` | 20개 요구사항 읽기 전용 진단 |
+| `./bootstrap doctor --json` | 같은 20개 진단을 단일 JSON 객체로 stdout에 출력 |
+
+## 자동화용 진단 JSON
+
+CI, MDM 또는 플릿 관리 도구에서는 `./bootstrap doctor --json`을 사용합니다.
+stdout에는 `generatedAt`, `checks`, `failures`를 가진 하나의 JSON 객체만 출력되며,
+동일한 보고서는 `${BOOTSTRAP_STATE_DIR}/doctor.json`에도 계속 기록됩니다. 실패한
+요구사항이 하나라도 있으면 JSON 증거를 먼저 출력한 뒤 명령은 비정상 종료하므로
+자동화가 진단 내용을 보존하면서도 fail-closed로 동작할 수 있습니다.
+
+`--json`은 `doctor` 명령에만 허용됩니다. 기존 운영 스크립트의 사람용 출력을
+복원해야 하면 `--json`을 제거하면 되며, 설치·인증·패키지 변경 경로에는 영향을
+주지 않습니다.
 
 ## 테스트
 
