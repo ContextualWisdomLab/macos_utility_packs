@@ -112,6 +112,21 @@ else
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
+invalid_json_status=0
+if "${BOOTSTRAP_ROOT}/bootstrap" skills --json > "${TEST_ROOT}/invalid-json.stdout" 2> "${TEST_ROOT}/invalid-json.stderr"; then
+  fail "bootstrap rejects --json outside doctor"
+else
+  invalid_json_status=$?
+  if [[ "$invalid_json_status" == "2" ]] &&
+    grep -Fq -- '--json is only valid with the doctor command' "${TEST_ROOT}/invalid-json.stderr" &&
+    grep -Fq 'Usage: ./bootstrap' "${TEST_ROOT}/invalid-json.stderr"; then
+    pass "bootstrap rejects --json outside doctor with usage and exit 2"
+  else
+    fail "bootstrap rejects --json outside doctor with usage and exit 2"
+  fi
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
 cp "${HOME}/Library/Application Support/Code/User/mcp.json" "${TEST_ROOT}/vscode-mcp.json"
 printf '{"mcpServers":{"context7":{}}}\n' > "${HOME}/Library/Application Support/Code/User/mcp.json"
 if doctor_mcp_configs; then
@@ -140,8 +155,8 @@ assert_file_contains "$report" '"REQ-02"' "failed report still identifies Codex 
 assert_file_contains "$report" '"status": "fail"' "failed report records failure"
 
 failure_json_output=""
-if BOOTSTRAP_OUTPUT_FORMAT=json run_doctor > "${TEST_ROOT}/doctor-failure.json"; then
-  fail "doctor JSON mode preserves failing exit status"
+if "${BOOTSTRAP_ROOT}/bootstrap" doctor --json > "${TEST_ROOT}/doctor-failure.json"; then
+  fail "bootstrap doctor --json preserves failing exit status"
 else
   failure_json_output="$(cat "${TEST_ROOT}/doctor-failure.json")"
   if printf '%s\n' "$failure_json_output" | python3 -c '
@@ -149,11 +164,12 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] > 0
+assert len(value["checks"]) == 20
 assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value["checks"])
 '; then
-    pass "doctor JSON mode emits failure evidence before nonzero exit"
+    pass "bootstrap doctor --json emits complete failure evidence before nonzero exit"
   else
-    fail "doctor JSON mode emits failure evidence before nonzero exit"
+    fail "bootstrap doctor --json emits complete failure evidence before nonzero exit"
   fi
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
