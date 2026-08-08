@@ -54,13 +54,19 @@ RETIRED_SOURCES = {
 
 
 def validate_catalog_url(url: str) -> None:
+    """Reject catalog URLs that are not HTTPS links to the trusted skills.sh hosts."""
+
     parsed = urlparse(url)
     if parsed.scheme != "https" or parsed.hostname not in {"skills.sh", "www.skills.sh"}:
         raise ValueError(f"unsupported catalog URL: {url}")
 
 
 class CatalogRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Keep HTTP redirects inside the same trusted skills.sh catalog boundary."""
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
+        """Validate a redirect destination before urllib follows it."""
+
         validate_catalog_url(newurl)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
@@ -69,6 +75,8 @@ CATALOG_OPENER = urllib.request.build_opener(CatalogRedirectHandler)
 
 
 def fetch_text(url: str) -> str:
+    """Download one trusted catalog page and return its UTF-8 text."""
+
     validate_catalog_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with CATALOG_OPENER.open(request, timeout=30) as response:  # nosemgrep
@@ -76,6 +84,8 @@ def fetch_text(url: str) -> str:
 
 
 def fetch_documents(urls: Iterable[str]) -> list[tuple[str, str]]:
+    """Fetch unique catalog URLs concurrently and pair each document with its source URL."""
+
     ordered_urls = sorted(set(urls))
     with ThreadPoolExecutor(max_workers=8) as executor:
         documents = list(executor.map(fetch_text, ordered_urls))
@@ -83,11 +93,15 @@ def fetch_documents(urls: Iterable[str]) -> list[tuple[str, str]]:
 
 
 class LinkParser(HTMLParser):
+    """Collect hyperlink targets from a catalog HTML document."""
+
     def __init__(self) -> None:
         super().__init__()
         self.links: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Record the href value from each anchor start tag."""
+
         if tag != "a":
             return
         for key, value in attrs:
@@ -96,12 +110,16 @@ class LinkParser(HTMLParser):
 
 
 def html_links(document: str, base_url: str) -> set[str]:
+    """Return absolute links found in one HTML document."""
+
     parser = LinkParser()
     parser.feed(document)
     return {urljoin(base_url, link) for link in parser.links}
 
 
 def skill_from_url(url: str) -> tuple[str, str] | None:
+    """Parse a concrete skills.sh skill URL into its repository source and skill slug."""
+
     parsed = urlparse(url)
     if parsed.netloc not in {"skills.sh", "www.skills.sh"}:
         return None
@@ -116,6 +134,8 @@ def skill_from_url(url: str) -> tuple[str, str] | None:
 
 
 def official_creator_from_url(url: str) -> str | None:
+    """Return an official catalog creator name when a URL represents one creator page."""
+
     parsed = urlparse(url)
     if parsed.netloc not in {"skills.sh", "www.skills.sh"}:
         return None
@@ -130,6 +150,8 @@ def official_creator_from_url(url: str) -> str | None:
 
 
 def official_repository_from_url(url: str) -> str | None:
+    """Return an owner/repository source when a URL represents an official repository page."""
+
     parsed = urlparse(url)
     if parsed.netloc not in {"skills.sh", "www.skills.sh"}:
         return None
@@ -144,6 +166,8 @@ def official_repository_from_url(url: str) -> str | None:
 
 
 def official_repositories(documents: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
+    """Extract official repositories and request every skill from each one."""
+
     result: set[tuple[str, str]] = set()
     for document, base_url in documents:
         for link in html_links(document, base_url):
@@ -154,6 +178,8 @@ def official_repositories(documents: Iterable[tuple[str, str]]) -> set[tuple[str
 
 
 def topic_skills(documents: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
+    """Extract concrete repository-and-skill pairs from topic catalog pages."""
+
     result: set[tuple[str, str]] = set()
     for document, base_url in documents:
         for link in html_links(document, base_url):
@@ -166,6 +192,8 @@ def topic_skills(documents: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
 def normalize_migrations(
     skills: set[tuple[str, str]],
 ) -> set[tuple[str, str]]:
+    """Replace retired catalog sources with known current sources and drop unusable entries."""
+
     return {
         MIGRATED_SOURCES.get(source, (source, slug))
         for source, slug in skills
@@ -174,6 +202,8 @@ def normalize_migrations(
 
 
 def live_official_documents() -> list[tuple[str, str]]:
+    """Fetch the live official catalog index and all discovered creator pages."""
+
     index = fetch_text(OFFICIAL_URL)
     creators = sorted(
         creator
@@ -184,6 +214,8 @@ def live_official_documents() -> list[tuple[str, str]]:
 
 
 def live_topic_documents() -> list[tuple[str, str]]:
+    """Fetch the live topic index and every trusted topic page it links to."""
+
     index = fetch_text(TOPICS_URL)
     topic_urls = sorted(
         link
@@ -195,6 +227,8 @@ def live_topic_documents() -> list[tuple[str, str]]:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse optional fixture files used to make catalog discovery deterministic in tests."""
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--official-file", type=Path, action="append", default=[])
     parser.add_argument("--topic-file", type=Path, action="append", default=[])
@@ -202,6 +236,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Discover, normalize, deduplicate, and print installable skills as tab-separated rows."""
+
     args = parse_args()
     if args.official_file:
         official = [(path.read_text(), OFFICIAL_URL) for path in args.official_file]
