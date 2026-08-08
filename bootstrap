@@ -23,6 +23,13 @@ Options:
 USAGE
 }
 
+usage_error() {
+  local message="$1"
+  die "$message" || true
+  usage >&2
+  exit 2
+}
+
 BOOTSTRAP_COMMAND="install"
 BOOTSTRAP_OUTPUT_FORMAT="${BOOTSTRAP_OUTPUT_FORMAT:-human}"
 if [[ $# -gt 0 && "${1:0:1}" != "-" ]]; then
@@ -47,9 +54,7 @@ while [[ $# -gt 0 ]]; do
     --verbose) BOOTSTRAP_VERBOSE=1 ;;
     --json)
       if [[ "$BOOTSTRAP_COMMAND" != "doctor" ]]; then
-        die "--json is only valid with the doctor command"
-        usage >&2
-        exit 2
+        usage_error "--json is only valid with the doctor command"
       fi
       BOOTSTRAP_OUTPUT_FORMAT=json
       ;;
@@ -58,9 +63,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      die "unknown option: $1"
-      usage >&2
-      exit 2
+      usage_error "unknown option: $1"
       ;;
   esac
   shift
@@ -123,8 +126,6 @@ case "$BOOTSTRAP_COMMAND" in
     ;;
   kubernetes) run_phase kubernetes configure_kubernetes ;;
   *)
-    die "unknown command: ${BOOTSTRAP_COMMAND}"
-    usage >&2
-    exit 2
+    usage_error "unknown command: ${BOOTSTRAP_COMMAND}"
     ;;
 esac
