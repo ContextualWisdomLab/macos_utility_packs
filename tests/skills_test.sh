@@ -96,7 +96,7 @@ TEST_COUNT=$((TEST_COUNT + 1))
 
 npx_calls="$(cat "$mock_log")"
 assert_not_contains "$npx_calls" 'vercel-labs/skills --skill find-skills' "installed named skill is not reinstalled"
-assert_not_contains "$npx_calls" 'already/repo --skill *' "installed wildcard source is not reinstalled"
+assert_contains "$npx_calls" 'already/repo --skill *' "partial wildcard lock does not suppress full-source reconciliation"
 assert_contains "$npx_calls" '--agent universal' "shared universal agent target is selected"
 assert_contains "$npx_calls" '--agent codex' "Codex skill target is selected"
 assert_contains "$npx_calls" '--agent claude-code' "Claude skill target is selected"
@@ -106,8 +106,8 @@ assert_contains "$npx_calls" 'renamed/repo --skill *' "stale topic names fall ba
 
 report="${BOOTSTRAP_STATE_DIR}/skills-report.json"
 assert_file_contains "$report" '"failed": 1' "failure count is reported"
-assert_file_contains "$report" '"installed": 2' "new and fallback installations are reported"
-assert_file_contains "$report" '"skipped": 2' "already-installed entries are reported"
+assert_file_contains "$report" '"installed": 3' "new, wildcard, and fallback installations are reported"
+assert_file_contains "$report" '"skipped": 1' "only proven named installations are skipped"
 assert_file_contains "$report" '"skill": "broken-skill"' "failed skill is named"
 
 finish_tests
