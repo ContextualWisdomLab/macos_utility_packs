@@ -81,6 +81,37 @@ for number in $(seq -w 1 20); do
 done
 assert_file_contains "$report" '"status": "pass"' "doctor report contains passing checks"
 
+json_output=""
+if json_output="$(BOOTSTRAP_OUTPUT_FORMAT=json run_doctor)" &&
+  printf '%s\n' "$json_output" | python3 -c '
+import json
+import sys
+value = json.load(sys.stdin)
+assert value["failures"] == 0
+assert len(value["checks"]) == 20
+assert all(item["status"] == "pass" for item in value["checks"])
+'; then
+  pass "doctor JSON mode emits one parseable complete report"
+else
+  fail "doctor JSON mode emits one parseable complete report"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+cli_json_output=""
+if cli_json_output="$("${BOOTSTRAP_ROOT}/bootstrap" doctor --json)" &&
+  printf '%s\n' "$cli_json_output" | python3 -c '
+import json
+import sys
+value = json.load(sys.stdin)
+assert value["failures"] == 0
+assert len(value["checks"]) == 20
+'; then
+  pass "bootstrap doctor --json exposes machine-readable diagnostics"
+else
+  fail "bootstrap doctor --json exposes machine-readable diagnostics"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
 cp "${HOME}/Library/Application Support/Code/User/mcp.json" "${TEST_ROOT}/vscode-mcp.json"
 printf '{"mcpServers":{"context7":{}}}\n' > "${HOME}/Library/Application Support/Code/User/mcp.json"
 if doctor_mcp_configs; then
@@ -107,6 +138,25 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 assert_file_contains "$report" '"REQ-02"' "failed report still identifies Codex requirement"
 assert_file_contains "$report" '"status": "fail"' "failed report records failure"
+
+failure_json_output=""
+if BOOTSTRAP_OUTPUT_FORMAT=json run_doctor > "${TEST_ROOT}/doctor-failure.json"; then
+  fail "doctor JSON mode preserves failing exit status"
+else
+  failure_json_output="$(cat "${TEST_ROOT}/doctor-failure.json")"
+  if printf '%s\n' "$failure_json_output" | python3 -c '
+import json
+import sys
+value = json.load(sys.stdin)
+assert value["failures"] > 0
+assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value["checks"])
+'; then
+    pass "doctor JSON mode emits failure evidence before nonzero exit"
+  else
+    fail "doctor JSON mode emits failure evidence before nonzero exit"
+  fi
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
 
 mv "${TEST_ROOT}/bin/java" "${TEST_ROOT}/java.disabled"
 if run_doctor >/dev/null; then
