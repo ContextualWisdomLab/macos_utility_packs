@@ -77,7 +77,11 @@ source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
 
 cat > "${TEST_ROOT}/bin/claude" <<'MOCK'
 #!/usr/bin/env bash
-printf '<%s>\n' "$@" >> "$MOCK_CLAUDE_LOG"
+{
+  printf 'CALL'
+  printf '\t<%s>' "$@"
+  printf '\n'
+} >> "$MOCK_CLAUDE_LOG"
 MOCK
 chmod +x "${TEST_ROOT}/bin/claude"
 export MOCK_CLAUDE_LOG="${TEST_ROOT}/claude.log"
@@ -86,7 +90,10 @@ catalog_rows() {
   printf 'empty-arg\x1estdio\x1ecommand\x1e\x1e1\x1e\n'
 }
 configure_claude_mcp
-assert_eq "1" "$(grep -Fxc '<>' "$MOCK_CLAUDE_LOG")" "Claude MCP distinguishes an empty argument from no arguments"
+empty_list_call="$(grep -F '<empty-list>' "$MOCK_CLAUDE_LOG")"
+empty_arg_call="$(grep -F '<empty-arg>' "$MOCK_CLAUDE_LOG")"
+assert_not_contains "$empty_list_call" '<>' "Claude MCP empty list passes no empty argument"
+assert_eq "1" "$(printf '%s\n' "$empty_arg_call" | grep -oF '<>' | wc -l | tr -d ' ')" "Claude MCP empty argument remains exactly one empty argument"
 source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
 
 context7_row="$(catalog_rows | grep '^context7')"
