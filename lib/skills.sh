@@ -65,6 +65,12 @@ import sys
 from pathlib import Path
 
 lock_path, canonical_path, source, requested = sys.argv[1:]
+# A lock entry proves that one named skill was installed, but it does not prove
+# that a wildcard source was fully synchronized. Wildcards therefore reconcile
+# until the lock format gains an explicit full-source completion marker.
+if requested == "*":
+    raise SystemExit(1)
+
 try:
     skills = json.loads(Path(lock_path).read_text()).get("skills", {})
 except (OSError, json.JSONDecodeError):
@@ -75,7 +81,7 @@ matching = [
     for name, metadata in skills.items()
     if isinstance(metadata, dict)
     and metadata.get("source") == source
-    and (requested == "*" or name == requested)
+    and name == requested
 ]
 if matching and all((Path(canonical_path) / name / "SKILL.md").is_file() for name in matching):
     raise SystemExit(0)
