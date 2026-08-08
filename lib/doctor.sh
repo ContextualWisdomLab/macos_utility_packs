@@ -9,7 +9,9 @@ doctor_add() {
   local status_value="$3"
   local detail="$4"
   printf '%s\t%s\t%s\t%s\n' "$id" "$name" "$status_value" "$detail" >> "$doctor_results_file"
-  printf '%-7s %-5s %s — %s\n' "$id" "$status_value" "$name" "$detail"
+  if [[ "${BOOTSTRAP_OUTPUT_FORMAT:-human}" != "json" ]]; then
+    printf '%-7s %-5s %s — %s\n' "$id" "$status_value" "$name" "$detail"
+  fi
   if [[ "$status_value" == "fail" ]]; then
     doctor_failure_count=$((doctor_failure_count + 1))
   fi
@@ -121,6 +123,12 @@ doctor_write_report() {
   mv "${target}.tmp" "$target"
 }
 
+doctor_emit_report() {
+  if [[ "${BOOTSTRAP_OUTPUT_FORMAT:-human}" == "json" ]]; then
+    cat "${BOOTSTRAP_STATE_DIR}/doctor.json"
+  fi
+}
+
 run_doctor() {
   ensure_state_dirs
   doctor_results_file="$(mktemp "${TMPDIR:-/tmp}/doctor-results.XXXXXX")"
@@ -203,6 +211,7 @@ run_doctor() {
 
   doctor_write_report
   rm -f "$doctor_results_file"
+  doctor_emit_report
 
   if (( doctor_failure_count > 0 )); then
     record_result doctor failed "${doctor_failure_count} requirement(s) failed"
