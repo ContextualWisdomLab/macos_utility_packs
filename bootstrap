@@ -18,11 +18,13 @@ Options:
   --skip PHASES   Skip comma-separated phases
   --yes           Accept non-secret prompts
   --verbose       Enable diagnostic logging
+  --json          Emit doctor diagnostics as one JSON object (doctor only)
   -h, --help      Show this help
 USAGE
 }
 
 BOOTSTRAP_COMMAND="install"
+BOOTSTRAP_OUTPUT_FORMAT="${BOOTSTRAP_OUTPUT_FORMAT:-human}"
 if [[ $# -gt 0 && "${1:0:1}" != "-" ]]; then
   BOOTSTRAP_COMMAND="$1"
   shift
@@ -43,6 +45,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --yes) BOOTSTRAP_YES=1 ;;
     --verbose) BOOTSTRAP_VERBOSE=1 ;;
+    --json)
+      if [[ "$BOOTSTRAP_COMMAND" != "doctor" ]]; then
+        die "--json is only valid with the doctor command"
+        usage >&2
+        exit 2
+      fi
+      BOOTSTRAP_OUTPUT_FORMAT=json
+      ;;
     -h|--help)
       usage
       exit 0
@@ -56,7 +66,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-export BOOTSTRAP_DRY_RUN BOOTSTRAP_ONLY BOOTSTRAP_SKIP BOOTSTRAP_YES BOOTSTRAP_VERBOSE
+export BOOTSTRAP_DRY_RUN BOOTSTRAP_ONLY BOOTSTRAP_SKIP BOOTSTRAP_YES BOOTSTRAP_VERBOSE BOOTSTRAP_OUTPUT_FORMAT
 
 load_optional_module() {
   local module="$1"
