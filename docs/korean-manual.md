@@ -39,8 +39,8 @@
 ## 설치되는 핵심 도구
 
 - 패키지 기반: Homebrew, Git, GitHub CLI
-- AI CLI: Codex, Google Antigravity CLI(`agy`), Claude Code, GitHub
-  Copilot CLI
+- AI 데스크톱: ChatGPT Desktop(Codex 포함), Claude Desktop
+- AI CLI: Codex, Google Antigravity CLI(`agy`), Claude Code, GitHub Copilot CLI
 - 에디터: Visual Studio Code
 - 언어 격리: `mise`, `uv`, Node 24, Temurin JDK 21, Corepack, `pnpm`,
   Go, Rust, .NET 8, LLVM, CMake, Ninja, Conan
@@ -100,8 +100,10 @@ Figma는 OAuth 로그인이 필요합니다. `./bootstrap auth` 안내 후 각
 
 Ponytail은 MCP가 아니라 에이전트 플러그인과 스킬입니다. 공용 스킬로
 설치하고 Codex, Claude, Copilot, Antigravity에서 지원되는 공식 플러그인
-명령도 실행합니다. VS Code/Copilot 에이전트에는 자동 적용되는 사용자
-지침도 배포합니다.
+명령도 실행합니다. 와일드카드 동기화에서도 `mcp`, `claude`, `codex`,
+`grok`, `build`처럼 클라이언트 명령과 정확히 충돌하는 스킬은 설치하지
+않습니다. VS Code/Copilot 에이전트에는 자동 적용되는 사용자 지침도
+배포합니다.
 
 CodeGraph는 글로벌 CLI와 MCP 서버로 설치합니다. 공용 지침은 저장소에
 들어갈 때 `.codegraph/` 인덱스가 없으면 별도 요청을 기다리지 않고 다음
@@ -132,6 +134,10 @@ Microsoft 스킬이 이에 해당합니다. 삭제·비공개되었고 대체 �
 부분 실패 시 성공한 스킬은 유지하고
 `~/.local/state/macos-ai-bootstrap/skills-report.json`에 실패 목록을
 남긴 뒤 비정상 종료합니다. 다시 실행하면 재시도할 수 있습니다.
+
+클라이언트 기본 명령과 정확히 충돌하는 Skill 이름(`mcp`, `claude`, `codex`,
+`grok`, `build`)은 설치하지 않습니다. 저장소 전체(`*`) 항목도 먼저 이름을
+확인해 해당 이름만 제외합니다.
 
 ## Python, Java, Node 격리
 
@@ -208,6 +214,10 @@ Docker Desktop과 Podman은 설치하지 않습니다. Colima 템플릿은
 containerd를 선택하며 기존 사용자 템플릿이 있으면 덮어쓰지 않습니다.
 `nerdctl`은 sudo가 필요 없는 `~/.local/bin` 래퍼로 설치되며 내부적으로
 Colima에 포함된 nerdctl을 호출합니다.
+
+컨테이너 단계는 템플릿과 래퍼를 배치한 뒤 `brew services start colima`를
+실행합니다. 따라서 Colima가 Homebrew 사용자 서비스로 등록되고 로그인 후
+자동 시작됩니다.
 
 ```bash
 colima start --runtime containerd
@@ -321,7 +331,7 @@ Codex, Claude, Antigravity의 대화형 로그인만 시작합니다. Copilot은
 ./bootstrap doctor
 ```
 
-`REQ-01`부터 `REQ-20`까지 `pass` 또는 `fail`로 출력합니다. JSON 결과는
+`REQ-01`부터 `REQ-21`까지 `pass` 또는 `fail`로 출력합니다. JSON 결과는
 `~/.local/state/macos-ai-bootstrap/doctor.json`에 저장됩니다. 로그인만
 남은 원격 MCP는 설치 실패와 구분해서 클라이언트의 MCP 메뉴에서
 확인합니다.
@@ -349,8 +359,25 @@ MCP 서버가 나타나지 않으면 클라이언트를 완전히 종료해 다�
 ```
 
 CodeGraph가 보이지 않으면 `command -v codegraph`와 `npm prefix --global`을
-확인합니다. Colima 문제가 있으면 `colima status`와 `colima logs`를
 확인합니다.
+
+Colima가 Homebrew 서비스 목록에 보이지 않으면 다음을 확인합니다.
+
+```bash
+brew services start colima
+brew services list | grep -E '^colima[[:space:]]'
+colima status --json
+nerdctl info
+```
+
+`doctor`는 서비스 등록뿐 아니라 실행 중인 기본 프로파일의 `runtime`이
+`containerd`인지도 확인합니다. 기존 프로파일이 `docker`로 만들어졌다면
+런타임은 기존 VM에서 자동 변경되지 않습니다. 설치기는 데이터 손실을 막기
+위해 기존 프로파일을 삭제하거나 재생성하지 않으므로, 백업과 별도 프로파일
+사용 여부를 먼저 결정한 뒤 사용자가 명시적으로 마이그레이션해야 합니다.
+
+표준 근거와 SOC 2·CSAP의 적용 경계는
+[보안·컴플라이언스 근거](standards.md)를 확인합니다.
 
 설정 백업은 `~/.local/state/macos-ai-bootstrap/backups`에 있습니다.
 설치기는 사용자 패키지나 임의 설정을 제거하지 않으므로, 복구는 백업을

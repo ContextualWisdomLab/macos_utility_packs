@@ -17,8 +17,9 @@
     {"id": "REQ-15", "name": "Git and Git Flow", "evidence": ["git command", "main/develop branches"]},
     {"id": "REQ-16", "name": "VPN clients", "evidence": ["OpenVPN command", "Passepartout application"]},
     {"id": "REQ-17", "name": "Small Kubernetes lab", "evidence": ["dedicated Colima k3s profile", "kubectl", "Helm", "k9s"]},
-    {"id": "REQ-18", "name": "Korean operator manual", "evidence": ["docs/한국어-매뉴얼.md"]},
+    {"id": "REQ-18", "name": "Korean operator manual", "evidence": ["docs/korean-manual.md"]},
     {"id": "REQ-19", "name": "Sebeolsik Korean IME", "evidence": ["built-in 3-Set Korean (390)", "Hammerspoon Left Shift + Space"]},
-    {"id": "REQ-20", "name": "AI process sleep prevention", "evidence": ["ai-awake", "macOS caffeinate"]}
+    {"id": "REQ-20", "name": "AI process sleep prevention", "evidence": ["ai-awake", "macOS caffeinate"]},
+    {"id": "REQ-21", "name": "Security and compliance evidence", "evidence": ["docs/standards.md", "NIST SSDF", "SLSA", "SOC 2", "CSAP"]}
   ]
 }

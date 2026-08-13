@@ -2,9 +2,27 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
+
+cat > "${TEST_ROOT}/bin/brew" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$MOCK_BREW_LOG"
+exit "${MOCK_BREW_EXIT:-0}"
+MOCK
+chmod +x "${TEST_ROOT}/bin/brew"
+export MOCK_BREW_LOG="${TEST_ROOT}/brew-services.log"
+
+cat > "${TEST_ROOT}/bin/colima" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$*" == "status --json" ]]; then
+  printf '{"runtime":"%s"}\n' "${MOCK_COLIMA_RUNTIME:-containerd}"
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/colima"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/shell.sh"
@@ -22,6 +40,7 @@ done
 
 configure_containers >/dev/null
 colima_config="${HOME}/.colima/_templates/default.yaml"
+assert_file_contains "$MOCK_BREW_LOG" 'services start colima' "Colima is registered as a Homebrew service"
 assert_file_contains "$colima_config" 'runtime: containerd' "Colima selects containerd"
 assert_file_contains "$colima_config" 'cpu: 4' "Colima has conservative CPU default"
 assert_file_contains "$colima_config" 'memory: 8' "Colima has conservative memory default"
@@ -30,6 +49,24 @@ assert_file_contains "$colima_config" 'enabled: false' "default Colima profile l
 printf 'user-owned: true\n' > "$colima_config"
 configure_containers >/dev/null
 assert_file_contains "$colima_config" 'user-owned: true' "existing Colima template is preserved"
+
+export MOCK_BREW_EXIT=1
+if configure_containers >/dev/null; then
+  fail "Colima service failure is propagated"
+else
+  pass "Colima service failure is propagated"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+unset MOCK_BREW_EXIT
+
+export MOCK_COLIMA_RUNTIME=docker
+if configure_containers >/dev/null; then
+  fail "Docker-runtime Colima configuration is rejected"
+else
+  pass "Docker-runtime Colima configuration is rejected"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+unset MOCK_COLIMA_RUNTIME
 
 block_contents="$(cat "${BOOTSTRAP_ROOT}/config/zshrc.block")"
 assert_contains "$block_contents" 'pnpm' "pnpm is activated in shell"

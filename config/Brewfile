@@ -40,6 +40,8 @@ brew "k9s"
 brew "openvpn"
 
 # AI developer applications and CLIs
+cask "chatgpt" # Current ChatGPT Desktop app includes Codex
+cask "claude" # Claude Desktop
 cask "codex"
 cask "antigravity-cli"
 cask "claude-code"

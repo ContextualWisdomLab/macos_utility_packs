@@ -13,6 +13,8 @@ SECTION = re.compile(r"^\[mcp_servers\.(?:\"([^\"]+)\"|([A-Za-z0-9_-]+))\]\s*$")
 
 
 def strip_managed_sections(text: str, managed: set[str]) -> str:
+    """Remove managed Codex MCP sections while preserving unrelated settings."""
+
     output: list[str] = []
     skipping = False
     for line in text.splitlines():
@@ -25,6 +27,8 @@ def strip_managed_sections(text: str, managed: set[str]) -> str:
 
 
 def render_section(name: str, item: dict[str, object]) -> str:
+    """Render one catalog entry as a Codex TOML MCP section."""
+
     lines = [f"[mcp_servers.{name}]"]
     if item["type"] == "http":
         lines.append(f"url = {json.dumps(item['url'])}")
@@ -36,6 +40,8 @@ def render_section(name: str, item: dict[str, object]) -> str:
 
 
 def main() -> int:
+    """Reconcile the catalog into a Codex TOML file with an atomic replacement."""
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", required=True, type=Path)
     parser.add_argument("--catalog", required=True, type=Path)

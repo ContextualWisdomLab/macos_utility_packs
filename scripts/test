@@ -12,5 +12,5 @@ for test_file in tests/*_test.sh; do
 done
 
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck bootstrap lib/*.sh tests/*.sh scripts/test
+  shellcheck -x bootstrap lib/*.sh tests/*.sh scripts/test
 fi

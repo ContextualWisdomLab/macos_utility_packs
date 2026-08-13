@@ -2,6 +2,7 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
@@ -26,7 +27,7 @@ assert_file_contains "$ime_config" 'spaceChordActive' "IME suppresses repeat and
 assert_file_contains "$ime_config" 'hs.keycodes.setMethod' "IME toggles the macOS input method"
 assert_file_contains "$ime_config" 'MACOS_AI_KOREAN_INPUT_METHOD' "IME method is configurable"
 
-assert_file_contains "${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md" '세벌식' "Korean manual explains Sebeolsik"
-assert_file_contains "${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md" 'Left Shift + Space' "Korean manual explains requested shortcut"
+assert_file_contains "${BOOTSTRAP_ROOT}/docs/korean-manual.md" '세벌식' "Korean manual explains Sebeolsik"
+assert_file_contains "${BOOTSTRAP_ROOT}/docs/korean-manual.md" 'Left Shift + Space' "Korean manual explains requested shortcut"
 
 finish_tests

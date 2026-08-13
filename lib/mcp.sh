@@ -6,9 +6,11 @@ mcp_catalog_path() {
 
 expand_home_path() {
   local path="$1"
+  # shellcheck disable=SC2088
+  local tilde_prefix='~/'
   case "$path" in
     "~") printf '%s\n' "$HOME" ;;
-    "~/"*) printf '%s/%s\n' "$HOME" "${path:2}" ;;
+    "$tilde_prefix"*) printf '%s/%s\n' "$HOME" "${path:2}" ;;
     *) printf '%s\n' "$path" ;;
   esac
 }
@@ -39,8 +41,9 @@ catalog_rows() {
 import json, sys
 items = json.load(open(sys.argv[1]))["mcpServers"]
 for name, item in sorted(items.items()):
-    args = "\x1f".join(item.get("args", []))
-    print("\x1e".join([name, item["type"], item.get("command", ""), args, item.get("url", "")]))
+    arg_list = item.get("args", [])
+    args = "\x1f".join(arg_list)
+    print("\x1e".join([name, item["type"], item.get("command", ""), args, str(len(arg_list)), item.get("url", "")]))
 PY
 }
 
@@ -69,16 +72,18 @@ configure_claude_mcp() {
     log "Claude Code is unavailable; cannot configure its MCP catalog"
     return 1
   fi
-  local name type command joined_args url
-  while IFS=$'\x1e' read -r name type command joined_args url; do
+  local name type command joined_args arg_count url
+  while IFS=$'\x1e' read -r name type command joined_args arg_count url; do
     run claude mcp remove --scope user "$name" >/dev/null 2>&1 || true
     if [[ "$type" == "http" ]]; then
       run claude mcp add --scope user --transport http "$name" "$url"
     else
-      local old_ifs="$IFS"
-      IFS=$'\x1f'
-      local args=( $joined_args )
-      IFS="$old_ifs"
+      local args=()
+      if (( arg_count > 0 )); then
+        IFS=$'\x1f' read -r -a args <<< "${joined_args}_"
+        local last_arg=$((${#args[@]} - 1))
+        args[last_arg]="${args[last_arg]%_}"
+      fi
       run claude mcp add --scope user --transport stdio "$name" -- "$command" "${args[@]}"
     fi
   done < <(catalog_rows)
@@ -106,14 +111,17 @@ install_ai_extensions() {
   fi
 
   if command_exists npx; then
-    (
-      cd "$HOME"
-      DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 \
-        run npx --yes skills add DietrichGebert/ponytail --skill '*' \
-          --agent universal --agent codex --agent claude-code \
-          --agent antigravity --agent antigravity-cli \
-          --agent github-copilot --yes
-    ) || failed=1
+    local ponytail_status
+    if install_one_skill DietrichGebert/ponytail '*'; then
+      :
+    else
+      ponytail_status=$?
+      # A wildcard containing only client-command conflicts is a deliberate
+      # skip, not an extension installation failure.
+      if (( ponytail_status != 2 )); then
+        failed=1
+      fi
+    fi
   else
     log "npx is unavailable; cannot install Ponytail shared skills"
     failed=1

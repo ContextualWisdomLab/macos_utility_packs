@@ -2,6 +2,7 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
@@ -74,11 +75,35 @@ assert_file_contains "$target_json" '"figma"' "MCP merge adds managed servers"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
+
+cat > "${TEST_ROOT}/bin/claude" <<'MOCK'
+#!/usr/bin/env bash
+{
+  printf 'CALL'
+  printf '\t<%s>' "$@"
+  printf '\n'
+} >> "$MOCK_CLAUDE_LOG"
+MOCK
+chmod +x "${TEST_ROOT}/bin/claude"
+export MOCK_CLAUDE_LOG="${TEST_ROOT}/claude.log"
+catalog_rows() {
+  printf 'empty-list\x1estdio\x1ecommand\x1e\x1e0\x1e\n'
+  printf 'empty-arg\x1estdio\x1ecommand\x1e\x1e1\x1e\n'
+}
+configure_claude_mcp
+empty_list_call="$(grep -F '<empty-list>' "$MOCK_CLAUDE_LOG")"
+empty_arg_call="$(grep -F '<empty-arg>' "$MOCK_CLAUDE_LOG")"
+assert_not_contains "$empty_list_call" '<>' "Claude MCP empty list passes no empty argument"
+assert_eq "1" "$(printf '%s\n' "$empty_arg_call" | grep -oF '<>' | wc -l | tr -d ' ')" "Claude MCP empty argument remains exactly one empty argument"
+source "${BOOTSTRAP_ROOT}/lib/mcp.sh"
+
 context7_row="$(catalog_rows | grep '^context7')"
-IFS=$'\x1e' read -r row_name row_type row_command row_args row_url <<< "$context7_row"
+IFS=$'\x1e' read -r row_name row_type row_command row_args row_arg_count row_url <<< "$context7_row"
 assert_eq "context7" "$row_name" "MCP catalog row preserves HTTP server name"
 assert_eq "http" "$row_type" "MCP catalog row preserves HTTP transport"
 assert_eq "" "$row_command" "MCP catalog row preserves an empty HTTP command field"
+assert_eq "" "$row_args" "MCP catalog row preserves an empty argument field"
+assert_eq "0" "$row_arg_count" "MCP catalog row preserves an empty argument list"
 assert_eq "https://mcp.context7.com/mcp" "$row_url" "MCP catalog row preserves HTTP URL after empty fields"
 
 codex_toml="${TEST_ROOT}/config.toml"
@@ -121,5 +146,34 @@ assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'codegraph install' "CodeGra
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'merge-codex-mcp.py' "Codex MCP configuration does not trigger OAuth during installation"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'continuing with plugin reconciliation' "existing plugin marketplaces do not break idempotent reruns"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'agy plugin install https://github.com/DietrichGebert/ponytail' "Ponytail uses the official Antigravity plugin installer"
+
+source "${BOOTSTRAP_ROOT}/lib/skills.sh"
+ponytail_filter_log="${TEST_ROOT}/ponytail-filter.log"
+cat > "${TEST_ROOT}/bin/npx" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/npx"
+for command_name in npm codegraph; do
+  cat > "${TEST_ROOT}/bin/${command_name}" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+  chmod +x "${TEST_ROOT}/bin/${command_name}"
+done
+command_exists() {
+  [[ "$1" == "npx" || "$1" == "npm" || "$1" == "codegraph" ]]
+}
+install_one_skill() {
+  printf '%s\t%s\n' "$1" "$2" >> "$ponytail_filter_log"
+  return 2
+}
+if install_ai_extensions >/dev/null 2>&1; then
+  pass "Ponytail wildcard installation uses conflict filtering"
+else
+  fail "Ponytail wildcard installation uses conflict filtering"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+assert_file_contains "$ponytail_filter_log" $'DietrichGebert/ponytail\t*' "Ponytail wildcard reaches the shared skill filter"
 
 finish_tests

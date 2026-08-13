@@ -98,12 +98,14 @@ configure_containers() {
   local target="${HOME}/.colima/_templates/default.yaml"
   local nerdctl_source="${BOOTSTRAP_ROOT}/bin/nerdctl"
   local nerdctl_target="${HOME}/.local/bin/nerdctl"
+  local failed=0
   [[ -f "$source_file" ]] || die "missing Colima template: ${source_file}"
   [[ -f "$nerdctl_source" ]] || die "missing nerdctl wrapper: ${nerdctl_source}"
 
   if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
     log "DRY-RUN install Colima containerd template at ${target}"
     log "DRY-RUN install user-local nerdctl wrapper at ${nerdctl_target}"
+    log "DRY-RUN brew services start colima"
   else
     if [[ ! -e "$target" ]]; then
       mkdir -p "$(dirname "$target")"
@@ -114,8 +116,24 @@ configure_containers() {
       cp "$nerdctl_source" "$nerdctl_target"
       chmod +x "$nerdctl_target"
     fi
+
+    if command_exists brew; then
+      run brew services start colima || failed=1
+      if (( failed == 0 )) && ! colima_runtime_is_containerd; then
+        log "Colima is not running with the required containerd runtime"
+        failed=1
+      fi
+    else
+      log "Homebrew is unavailable; cannot register the Colima service"
+      failed=1
+    fi
   fi
-  record_result containers changed "Colima configured for containerd/nerdctl"
+
+  if (( failed != 0 )); then
+    record_result containers failed "Colima service registration or containerd runtime verification failed"
+    return 1
+  fi
+  record_result containers changed "Colima configured for containerd/nerdctl and brew service"
 }
 
 kubernetes_profile_name() {

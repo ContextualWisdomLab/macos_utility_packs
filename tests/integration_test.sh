@@ -2,6 +2,7 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
@@ -44,6 +45,7 @@ assert_contains "$output" 'brew bundle' "package installation is planned through
 assert_contains "$output" 'Glances with all optional integrations' "Glances all extras installation is planned"
 assert_contains "$output" 'Official and Topic skills' "dynamic skills refresh is planned"
 assert_contains "$output" 'MCP catalog' "MCP reconciliation is planned"
+assert_contains "$output" 'brew services start colima' "Colima service registration is planned"
 assert_file_contains "${BOOTSTRAP_ROOT}/bootstrap" 'activate_bootstrap_runtime' "standalone commands activate mise runtimes"
 
 help_output="$(bash "${BOOTSTRAP_ROOT}/bootstrap" --help)"
@@ -66,10 +68,19 @@ else
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
-manual="${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md"
+manual="${BOOTSTRAP_ROOT}/docs/korean-manual.md"
 assert_file_contains "$manual" '빠른 시작' "Korean manual has quick start"
 assert_file_contains "$manual" 'MCP와 Figma' "Korean manual explains MCP and Figma"
 assert_file_contains "$manual" 'Kubernetes' "Korean manual explains Kubernetes lab"
 assert_file_contains "$manual" '문제 해결' "Korean manual has troubleshooting"
+assert_file_contains "${BOOTSTRAP_ROOT}/docs/standards.md" 'NIST SP 800-218' "standards evidence cites NIST SSDF"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'flowchart LR' "architecture documents the bootstrap flow"
+assert_file_contains "${BOOTSTRAP_ROOT}/CHANGELOG.md" 'Unreleased' "changelog records unreleased changes"
+assert_file_contains "${BOOTSTRAP_ROOT}/VERSION" '0.1.0' "project version is explicit"
+assert_file_contains "${BOOTSTRAP_ROOT}/CLAUDE.md" 'AGENTS.md' "Claude instructions delegate to shared agent guidance"
+assert_file_contains "${BOOTSTRAP_ROOT}/README.md" 'RUN_LIVE_TESTS=1' "README documents opt-in live host tests"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" '15-minute and 30-minute sweeps' "architecture documents central PR scheduler cadence"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'NVIDIA_NIM_API_KEY' "architecture documents the approved review key path"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'COPILOT_GITHUB_TOKEN' "architecture excludes the Copilot review key"
 
 finish_tests

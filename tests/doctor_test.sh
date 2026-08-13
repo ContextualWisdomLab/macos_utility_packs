@@ -2,6 +2,7 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
@@ -18,6 +19,26 @@ exit 0
 MOCK
   chmod +x "${TEST_ROOT}/bin/${command_name}"
 done
+
+export MOCK_COMMANDS_LOG="${TEST_ROOT}/commands.log"
+cat > "${TEST_ROOT}/bin/brew" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s %s\n' brew "$*" >> "$MOCK_COMMANDS_LOG"
+if [[ "$*" == "services list" ]]; then
+  printf 'colima\t%s\tuser\t/path/to/plist\n' "${MOCK_COLIMA_SERVICE_STATE:-started}"
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/brew"
+
+cat > "${TEST_ROOT}/bin/colima" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$*" == "status --json" ]]; then
+  printf '{"runtime":"%s"}\n' "${MOCK_COLIMA_RUNTIME:-containerd}"
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/colima"
 
 for agent_command in codex claude; do
   cat > "${TEST_ROOT}/bin/${agent_command}" <<MOCK
@@ -76,10 +97,56 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
 report="${BOOTSTRAP_STATE_DIR}/doctor.json"
-for number in $(seq -w 1 20); do
+for number in $(seq -w 1 21); do
   assert_file_contains "$report" "\"REQ-${number}\"" "doctor reports REQ-${number}"
 done
 assert_file_contains "$report" '"status": "pass"' "doctor report contains passing checks"
+
+json_output=""
+if json_output="$(BOOTSTRAP_OUTPUT_FORMAT=json run_doctor)" &&
+  printf '%s\n' "$json_output" | python3 -c '
+import json
+import sys
+value = json.load(sys.stdin)
+assert value["failures"] == 0
+assert len(value["checks"]) == 21
+assert all(item["status"] == "pass" for item in value["checks"])
+'; then
+  pass "doctor JSON mode emits one parseable complete report"
+else
+  fail "doctor JSON mode emits one parseable complete report"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+cli_json_output=""
+if cli_json_output="$("${BOOTSTRAP_ROOT}/bootstrap" doctor --json)" &&
+  printf '%s\n' "$cli_json_output" | python3 -c '
+import json
+import sys
+value = json.load(sys.stdin)
+assert value["failures"] == 0
+assert len(value["checks"]) == 21
+'; then
+  pass "bootstrap doctor --json exposes machine-readable diagnostics"
+else
+  fail "bootstrap doctor --json exposes machine-readable diagnostics"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+invalid_json_status=0
+if "${BOOTSTRAP_ROOT}/bootstrap" skills --json > "${TEST_ROOT}/invalid-json.stdout" 2> "${TEST_ROOT}/invalid-json.stderr"; then
+  fail "bootstrap rejects --json outside doctor"
+else
+  invalid_json_status=$?
+  if [[ "$invalid_json_status" == "2" ]] &&
+    grep -Fq -- '--json is only valid with the doctor command' "${TEST_ROOT}/invalid-json.stderr" &&
+    grep -Fq 'Usage: ./bootstrap' "${TEST_ROOT}/invalid-json.stderr"; then
+    pass "bootstrap rejects --json outside doctor with usage and exit 2"
+  else
+    fail "bootstrap rejects --json outside doctor with usage and exit 2"
+  fi
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
 
 cp "${HOME}/Library/Application Support/Code/User/mcp.json" "${TEST_ROOT}/vscode-mcp.json"
 printf '{"mcpServers":{"context7":{}}}\n' > "${HOME}/Library/Application Support/Code/User/mcp.json"
@@ -98,7 +165,69 @@ assert_not_contains "$commands_before" ' init ' "doctor does not initialize Code
 
 assert_file_contains "$report" 'glances[all] uv tool' "doctor reports Glances all extras evidence"
 
+if doctor_colima_service_is_registered; then
+  pass "doctor accepts a started Colima Homebrew service"
+else
+  fail "doctor accepts a started Colima Homebrew service"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+export MOCK_COLIMA_SERVICE_STATE=stopped
+if doctor_colima_service_is_registered; then
+  fail "doctor rejects a stopped Colima Homebrew service"
+else
+  pass "doctor rejects a stopped Colima Homebrew service"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+if run_doctor >/dev/null; then
+  fail "doctor fails when Colima is not a started Homebrew service"
+else
+  pass "doctor fails when Colima is not a started Homebrew service"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+unset MOCK_COLIMA_SERVICE_STATE
+
+if doctor_standards; then
+  pass "doctor reports local security standards evidence"
+else
+  fail "doctor reports local security standards evidence"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+printf '%s\n' 'incomplete standards evidence' > "${TEST_ROOT}/standards.md"
+if doctor_standards "${TEST_ROOT}/standards.md"; then
+  fail "standards doctor rejects incomplete evidence"
+else
+  pass "standards doctor rejects incomplete evidence"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+if colima_runtime_is_containerd; then
+  pass "doctor accepts an active containerd Colima runtime"
+else
+  fail "doctor accepts an active containerd Colima runtime"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+export MOCK_COLIMA_RUNTIME=docker
+if colima_runtime_is_containerd; then
+  fail "doctor rejects a Docker-runtime Colima profile"
+else
+  pass "doctor rejects a Docker-runtime Colima profile"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+if run_doctor >/dev/null; then
+  fail "doctor fails when the active Colima runtime is Docker"
+else
+  pass "doctor fails when the active Colima runtime is Docker"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+assert_file_contains "$report" 'Colima containerd environment is incomplete' "doctor explains the Docker-runtime container failure"
+unset MOCK_COLIMA_RUNTIME
+
 mv "${TEST_ROOT}/bin/codex" "${TEST_ROOT}/codex.disabled"
+saved_path="$PATH"
+PATH="${TEST_ROOT}/bin:/usr/bin:/bin"
 if run_doctor >/dev/null; then
   fail "missing required binary fails doctor"
 else
@@ -107,6 +236,27 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 assert_file_contains "$report" '"REQ-02"' "failed report still identifies Codex requirement"
 assert_file_contains "$report" '"status": "fail"' "failed report records failure"
+
+failure_json_output=""
+if "${BOOTSTRAP_ROOT}/bootstrap" doctor --json > "${TEST_ROOT}/doctor-failure.json"; then
+  fail "bootstrap doctor --json preserves failing exit status"
+else
+  failure_json_output="$(cat "${TEST_ROOT}/doctor-failure.json")"
+  if printf '%s\n' "$failure_json_output" | python3 -c '
+import json
+import sys
+value = json.load(sys.stdin)
+assert value["failures"] > 0
+assert len(value["checks"]) == 21
+assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value["checks"])
+'; then
+    pass "bootstrap doctor --json emits complete failure evidence before nonzero exit"
+  else
+    fail "bootstrap doctor --json emits complete failure evidence before nonzero exit"
+  fi
+fi
+PATH="$saved_path"
+TEST_COUNT=$((TEST_COUNT + 1))
 
 mv "${TEST_ROOT}/bin/java" "${TEST_ROOT}/java.disabled"
 if run_doctor >/dev/null; then
