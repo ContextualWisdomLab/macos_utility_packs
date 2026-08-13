@@ -48,3 +48,14 @@ Colima's service registration and active runtime are separate evidence points:
 `brew services list` proves launchd registration, while `colima status --json`
 must report `runtime: containerd` for the `nerdctl` contract. Existing profiles
 are never deleted or recreated automatically.
+
+## PR lifecycle ownership
+
+PR review, check revalidation, branch updates, and merge are owned by the
+organization's central `ContextualWisdomLab/.github` workflow rather than a
+duplicate repository-local scheduler. It reacts to PR/review/check events and
+also runs 15-minute and 30-minute sweeps, which is more frequent than the
+requested hourly cadence. The review path uses OpenCode and the Noema path may
+use `NVIDIA_NIM_API_KEY`; this repository contains no `COPILOT_GITHUB_TOKEN`
+workflow path. Direct merge remains protected by the live check and review
+state.

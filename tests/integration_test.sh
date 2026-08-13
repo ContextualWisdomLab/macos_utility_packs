@@ -79,5 +79,8 @@ assert_file_contains "${BOOTSTRAP_ROOT}/CHANGELOG.md" 'Unreleased' "changelog re
 assert_file_contains "${BOOTSTRAP_ROOT}/VERSION" '0.1.0' "project version is explicit"
 assert_file_contains "${BOOTSTRAP_ROOT}/CLAUDE.md" 'AGENTS.md' "Claude instructions delegate to shared agent guidance"
 assert_file_contains "${BOOTSTRAP_ROOT}/README.md" 'RUN_LIVE_TESTS=1' "README documents opt-in live host tests"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" '15-minute and 30-minute sweeps' "architecture documents central PR scheduler cadence"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'NVIDIA_NIM_API_KEY' "architecture documents the approved review key path"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'COPILOT_GITHUB_TOKEN' "architecture excludes the Copilot review key"
 
 finish_tests
