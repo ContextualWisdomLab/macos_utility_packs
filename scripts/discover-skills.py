@@ -16,7 +16,8 @@ from urllib.parse import urljoin, urlparse
 BASE_URL = "https://www.skills.sh"
 OFFICIAL_URL = f"{BASE_URL}/official"
 TOPICS_URL = f"{BASE_URL}/topic"
-USER_AGENT = "macos-ai-bootstrap/1.0"
+PROJECT_VERSION = (Path(__file__).resolve().parent.parent / "VERSION").read_text().strip()
+USER_AGENT = f"macos-ai-bootstrap/{PROJECT_VERSION}"
 RESERVED_ROUTES = {
     "agent",
     "agents",

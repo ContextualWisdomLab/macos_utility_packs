@@ -55,6 +55,7 @@ def _run_script(path: Path, arguments: list[str], expected_code: int = 0) -> str
 def _discover_cases(module, official_fixture: Path, topic_fixture: Path) -> None:
     """Cover catalog validation, parsing, normalization, live adapters, and CLI paths."""
 
+    assert module.USER_AGENT == f"macos-ai-bootstrap/{(official_fixture.parent.parent.parent / 'VERSION').read_text().strip()}"
     module.validate_catalog_url("https://skills.sh/official")
     for value in ("http://skills.sh/official", "https://evil.example/official"):
         _raises(ValueError, module.validate_catalog_url, value)
