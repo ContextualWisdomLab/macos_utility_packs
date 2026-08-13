@@ -6,9 +6,11 @@ mcp_catalog_path() {
 
 expand_home_path() {
   local path="$1"
+  # shellcheck disable=SC2088
+  local tilde_prefix='~/'
   case "$path" in
     "~") printf '%s\n' "$HOME" ;;
-    "~/"*) printf '%s/%s\n' "$HOME" "${path:2}" ;;
+    "$tilde_prefix"*) printf '%s/%s\n' "$HOME" "${path:2}" ;;
     *) printf '%s\n' "$path" ;;
   esac
 }
@@ -80,7 +82,7 @@ configure_claude_mcp() {
       if (( arg_count > 0 )); then
         IFS=$'\x1f' read -r -a args <<< "${joined_args}_"
         local last_arg=$((${#args[@]} - 1))
-        args[$last_arg]="${args[$last_arg]%_}"
+        args[last_arg]="${args[last_arg]%_}"
       fi
       run claude mcp add --scope user --transport stdio "$name" -- "$command" "${args[@]}"
     fi

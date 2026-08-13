@@ -2,6 +2,7 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
@@ -101,6 +102,7 @@ IFS=$'\x1e' read -r row_name row_type row_command row_args row_arg_count row_url
 assert_eq "context7" "$row_name" "MCP catalog row preserves HTTP server name"
 assert_eq "http" "$row_type" "MCP catalog row preserves HTTP transport"
 assert_eq "" "$row_command" "MCP catalog row preserves an empty HTTP command field"
+assert_eq "" "$row_args" "MCP catalog row preserves an empty argument field"
 assert_eq "0" "$row_arg_count" "MCP catalog row preserves an empty argument list"
 assert_eq "https://mcp.context7.com/mcp" "$row_url" "MCP catalog row preserves HTTP URL after empty fields"
 

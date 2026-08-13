@@ -74,6 +74,7 @@ export BOOTSTRAP_DRY_RUN BOOTSTRAP_ONLY BOOTSTRAP_SKIP BOOTSTRAP_YES BOOTSTRAP_V
 load_optional_module() {
   local module="$1"
   if [[ -f "${BOOTSTRAP_ROOT}/lib/${module}.sh" ]]; then
+    # shellcheck disable=SC1090
     source "${BOOTSTRAP_ROOT}/lib/${module}.sh"
   fi
 }

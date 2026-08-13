@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -n "${BOOTSTRAP_CORE_LOADED:-}" ]]; then
+  # shellcheck disable=SC2317
   return 0 2>/dev/null || exit 0
 fi
 BOOTSTRAP_CORE_LOADED=1

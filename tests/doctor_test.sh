@@ -2,6 +2,7 @@
 
 set -u
 
+# shellcheck source=tests/test_helper.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
