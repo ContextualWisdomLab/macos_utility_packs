@@ -159,7 +159,7 @@ def _discover_cases(module, official_fixture: Path, topic_fixture: Path) -> None
         module,
         "html_links",
         return_value={"https://skills.sh/topic/one", "https://evil.example/topic/two"},
-    ), patch.object(module, "fetch_documents", side_effect=lambda urls: list(urls)):
+    ), patch.object(module, "fetch_documents", side_effect=list):
         assert module.live_topic_documents() == ["https://skills.sh/topic/one"]
 
     with _argv(["discover", "--official-file", str(official_fixture), "--topic-file", str(topic_fixture)]):
