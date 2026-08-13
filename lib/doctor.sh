@@ -30,6 +30,24 @@ doctor_file_contains() {
   [[ -f "$file" ]] && grep -Fq "$pattern" "$file"
 }
 
+doctor_colima_runtime() {
+  command_exists colima || return 1
+  colima status --json 2>/dev/null |
+    python3 -c '
+import json
+import sys
+
+try:
+    value = json.load(sys.stdin)
+except (json.JSONDecodeError, OSError, TypeError):
+    raise SystemExit(1)
+
+raise SystemExit(
+    0 if isinstance(value, dict) and value.get("runtime") == "containerd" else 1
+)
+'
+}
+
 doctor_json_has_all_mcp() {
   local file="$1"
   local section="${2:-mcpServers}"
@@ -186,8 +204,9 @@ run_doctor() {
     doctor_add REQ-13 Monitoring fail "glances[all] receipt or monitoring commands are missing"
   fi
   if doctor_has_commands colima nerdctl &&
-    doctor_file_contains "${BOOTSTRAP_ROOT}/config/colima.yaml" "runtime: containerd"; then
-    doctor_add REQ-14 Containers pass "Colima containerd and nerdctl are available"
+    doctor_file_contains "${BOOTSTRAP_ROOT}/config/colima.yaml" "runtime: containerd" &&
+    doctor_colima_runtime; then
+    doctor_add REQ-14 Containers pass "Colima default profile is running with containerd and nerdctl is available"
   else
     doctor_add REQ-14 Containers fail "Colima containerd environment is incomplete"
   fi

@@ -20,6 +20,15 @@ MOCK
   chmod +x "${TEST_ROOT}/bin/${command_name}"
 done
 
+cat > "${TEST_ROOT}/bin/colima" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$*" == "status --json" ]]; then
+  printf '{"runtime":"%s"}\n' "${MOCK_COLIMA_RUNTIME:-containerd}"
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/colima"
+
 for agent_command in codex claude; do
   cat > "${TEST_ROOT}/bin/${agent_command}" <<MOCK
 #!/usr/bin/env bash
@@ -144,6 +153,29 @@ assert_not_contains "$commands_before" ' add ' "doctor does not add configuratio
 assert_not_contains "$commands_before" ' init ' "doctor does not initialize CodeGraph"
 
 assert_file_contains "$report" 'glances[all] uv tool' "doctor reports Glances all extras evidence"
+
+if doctor_colima_runtime; then
+  pass "doctor accepts an active containerd Colima runtime"
+else
+  fail "doctor accepts an active containerd Colima runtime"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+export MOCK_COLIMA_RUNTIME=docker
+if doctor_colima_runtime; then
+  fail "doctor rejects a Docker-runtime Colima profile"
+else
+  pass "doctor rejects a Docker-runtime Colima profile"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+if run_doctor >/dev/null; then
+  fail "doctor fails when the active Colima runtime is Docker"
+else
+  pass "doctor fails when the active Colima runtime is Docker"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+assert_file_contains "$report" 'Colima containerd environment is incomplete' "doctor explains the Docker-runtime container failure"
+unset MOCK_COLIMA_RUNTIME
 
 mv "${TEST_ROOT}/bin/codex" "${TEST_ROOT}/codex.disabled"
 saved_path="$PATH"
