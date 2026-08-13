@@ -39,8 +39,8 @@
 ## 설치되는 핵심 도구
 
 - 패키지 기반: Homebrew, Git, GitHub CLI
-- AI CLI: Codex, Google Antigravity CLI(`agy`), Claude Code, GitHub
-  Copilot CLI
+- AI 데스크톱: ChatGPT Desktop(Codex 포함), Claude Desktop
+- AI CLI: Codex, Google Antigravity CLI(`agy`), Claude Code, GitHub Copilot CLI
 - 에디터: Visual Studio Code
 - 언어 격리: `mise`, `uv`, Node 24, Temurin JDK 21, Corepack, `pnpm`,
   Go, Rust, .NET 8, LLVM, CMake, Ninja, Conan
@@ -133,6 +133,10 @@ Microsoft 스킬이 이에 해당합니다. 삭제·비공개되었고 대체 �
 `~/.local/state/macos-ai-bootstrap/skills-report.json`에 실패 목록을
 남긴 뒤 비정상 종료합니다. 다시 실행하면 재시도할 수 있습니다.
 
+클라이언트 기본 명령과 정확히 충돌하는 Skill 이름(`mcp`, `claude`, `codex`,
+`grok`, `build`)은 설치하지 않습니다. 저장소 전체(`*`) 항목도 먼저 이름을
+확인해 해당 이름만 제외합니다.
+
 ## Python, Java, Node 격리
 
 Python 프로젝트:
@@ -208,6 +212,10 @@ Docker Desktop과 Podman은 설치하지 않습니다. Colima 템플릿은
 containerd를 선택하며 기존 사용자 템플릿이 있으면 덮어쓰지 않습니다.
 `nerdctl`은 sudo가 필요 없는 `~/.local/bin` 래퍼로 설치되며 내부적으로
 Colima에 포함된 nerdctl을 호출합니다.
+
+컨테이너 단계는 템플릿과 래퍼를 배치한 뒤 `brew services start colima`를
+실행합니다. 따라서 Colima가 Homebrew 사용자 서비스로 등록되고 로그인 후
+자동 시작됩니다.
 
 ```bash
 colima start --runtime containerd

@@ -17,7 +17,7 @@ for formula in git gh jq mise uv pnpm llvm cmake ninja conan colima kubectl helm
   TEST_COUNT=$((TEST_COUNT + 1))
 done
 
-for cask in codex antigravity-cli claude-code visual-studio-code copilot-cli passepartout hammerspoon; do
+for cask in chatgpt claude codex antigravity-cli claude-code visual-studio-code copilot-cli passepartout hammerspoon; do
   if grep -Eq "^cask \"${cask}\"" "$brewfile"; then
     pass "Brewfile includes cask ${cask}"
   else
@@ -29,6 +29,7 @@ done
 contents="$(cat "$brewfile")"
 assert_not_contains "$contents" 'docker-desktop' "Docker Desktop is excluded"
 assert_not_contains "$contents" 'podman' "Podman is excluded"
+assert_not_contains "$contents" 'codex-app' "deprecated Codex Desktop cask is excluded"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/packages.sh"

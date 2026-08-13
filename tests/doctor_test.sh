@@ -145,6 +145,8 @@ assert_not_contains "$commands_before" ' init ' "doctor does not initialize Code
 assert_file_contains "$report" 'glances[all] uv tool' "doctor reports Glances all extras evidence"
 
 mv "${TEST_ROOT}/bin/codex" "${TEST_ROOT}/codex.disabled"
+saved_path="$PATH"
+PATH="${TEST_ROOT}/bin:/usr/bin:/bin"
 if run_doctor >/dev/null; then
   fail "missing required binary fails doctor"
 else
@@ -172,6 +174,7 @@ assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value
     fail "bootstrap doctor --json emits complete failure evidence before nonzero exit"
   fi
 fi
+PATH="$saved_path"
 TEST_COUNT=$((TEST_COUNT + 1))
 
 mv "${TEST_ROOT}/bin/java" "${TEST_ROOT}/java.disabled"

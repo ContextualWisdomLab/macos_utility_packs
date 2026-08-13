@@ -1,5 +1,63 @@
 #!/usr/bin/env bash
 
+# Keep exact matches so useful names such as mcp-builder remain installable.
+SKILL_COMMAND_CONFLICT_NAMES=(mcp claude codex grok build)
+
+skill_conflicts_with_client_command() {
+  local candidate
+  local name
+  candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  for name in "${SKILL_COMMAND_CONFLICT_NAMES[@]}"; do
+    [[ "$candidate" == "$name" ]] && return 0
+  done
+  return 1
+}
+
+list_source_skills() {
+  # ponytail: parse the CLI table; replace this with JSON when skills exposes it.
+  local source="$1"
+  local output
+  output="$(
+    set -o pipefail
+    (
+      cd "$HOME" || exit 1
+      DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 \
+        npx --yes skills add "$source" --list < /dev/null
+    ) 2>&1 |
+      python3 -c '
+import re
+import sys
+
+ansi = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+skill_name = re.compile(r"^│ {4}(\S.*)$")
+for raw in sys.stdin:
+    line = ansi.sub("", raw).replace("\r", "")
+    match = skill_name.match(line)
+    if match:
+        print(match.group(1).strip())
+'
+  )" || return 1
+  [[ -n "$output" ]] || return 1
+  printf '%s\n' "$output"
+}
+
+run_skills_add() {
+  local source="$1"
+  shift
+  (
+    cd "$HOME" || exit 1
+    DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 \
+      npx --yes skills add "$source" "$@" \
+        --agent universal \
+        --agent codex \
+        --agent claude-code \
+        --agent antigravity \
+        --agent antigravity-cli \
+        --agent github-copilot \
+        --yes < /dev/null
+  )
+}
+
 skills_list_path() {
   if [[ -n "${SKILLS_LIST_FILE:-}" ]]; then
     printf '%s\n' "$SKILLS_LIST_FILE"
@@ -92,19 +150,29 @@ PY
 install_one_skill() {
   local source="$1"
   local skill="$2"
-  (
-    cd "$HOME"
-    DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 \
-      npx --yes skills add "$source" \
-        --skill "$skill" \
-        --agent universal \
-        --agent codex \
-        --agent claude-code \
-        --agent antigravity \
-        --agent antigravity-cli \
-        --agent github-copilot \
-        --yes < /dev/null
-  )
+  if [[ "$skill" != "*" ]]; then
+    run_skills_add "$source" --skill "$skill"
+    return
+  fi
+
+  local available
+  local name
+  local install_args=()
+  available="$(list_source_skills "$source")" || return 1
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    if skill_conflicts_with_client_command "$name"; then
+      log "Skipping ${source}/${name}: conflicts with a client command"
+    else
+      install_args+=(--skill "$name")
+    fi
+  done <<< "$available"
+
+  if ((${#install_args[@]} == 0)); then
+    log "Skipping ${source}: all skills conflict with client commands"
+    return 0
+  fi
+  run_skills_add "$source" "${install_args[@]}"
 }
 
 install_shared_skills() {
@@ -144,7 +212,10 @@ install_shared_skills() {
 
   while IFS=$'\t' read -r source skill; do
     [[ -n "$source" && -n "$skill" ]] || continue
-    if skill_is_installed "$source" "$skill"; then
+    if skill_conflicts_with_client_command "$skill"; then
+      log "Skipping ${source}/${skill}: conflicts with a client command"
+      skipped=$((skipped + 1))
+    elif skill_is_installed "$source" "$skill"; then
       skipped=$((skipped + 1))
     elif install_one_skill "$source" "$skill"; then
       installed=$((installed + 1))

@@ -36,7 +36,7 @@ BOOTSTRAP_DRY_RUN=0
 install_ai_awake >/dev/null
 assert_file_contains "${HOME}/.local/bin/ai-awake" 'caffeinate' "ai-awake is installed in user PATH"
 
-manual="${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md"
+manual="${BOOTSTRAP_ROOT}/docs/korean-manual.md"
 assert_file_contains "$manual" 'ai-awake codex' "Korean manual explains awake wrapper"
 assert_file_contains "$manual" '절전' "Korean manual explains sleep prevention"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/zshrc.block" "codex-awake='ai-awake codex'" "shell exposes a Codex awake shortcut"

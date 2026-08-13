@@ -193,7 +193,7 @@ run_doctor() {
   doctor_has_commands kubectl helm k9s colima &&
     doctor_add REQ-17 Kubernetes-lab pass "on-demand Colima k3s tooling is available" ||
     doctor_add REQ-17 Kubernetes-lab fail "kubectl, Helm, k9s, or Colima is missing"
-  doctor_file_contains "${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md" "빠른 시작" &&
+  doctor_file_contains "${BOOTSTRAP_ROOT}/docs/korean-manual.md" "빠른 시작" &&
     doctor_add REQ-18 Korean-manual pass "Korean operator manual is available" ||
     doctor_add REQ-18 Korean-manual fail "Korean operator manual is missing"
   if [[ -f "${HOME}/.config/macos-ai-bootstrap/ime.lua" ]] &&

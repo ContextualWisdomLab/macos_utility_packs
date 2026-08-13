@@ -6,6 +6,13 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
 
+cat > "${TEST_ROOT}/bin/brew" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$MOCK_BREW_LOG"
+MOCK
+chmod +x "${TEST_ROOT}/bin/brew"
+export MOCK_BREW_LOG="${TEST_ROOT}/brew-services.log"
+
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/shell.sh"
 
@@ -22,6 +29,7 @@ done
 
 configure_containers >/dev/null
 colima_config="${HOME}/.colima/_templates/default.yaml"
+assert_file_contains "$MOCK_BREW_LOG" 'services start colima' "Colima is registered as a Homebrew service"
 assert_file_contains "$colima_config" 'runtime: containerd' "Colima selects containerd"
 assert_file_contains "$colima_config" 'cpu: 4' "Colima has conservative CPU default"
 assert_file_contains "$colima_config" 'memory: 8' "Colima has conservative memory default"

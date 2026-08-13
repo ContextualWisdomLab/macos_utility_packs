@@ -44,6 +44,7 @@ assert_contains "$output" 'brew bundle' "package installation is planned through
 assert_contains "$output" 'Glances with all optional integrations' "Glances all extras installation is planned"
 assert_contains "$output" 'Official and Topic skills' "dynamic skills refresh is planned"
 assert_contains "$output" 'MCP catalog' "MCP reconciliation is planned"
+assert_contains "$output" 'brew services start colima' "Colima service registration is planned"
 assert_file_contains "${BOOTSTRAP_ROOT}/bootstrap" 'activate_bootstrap_runtime' "standalone commands activate mise runtimes"
 
 help_output="$(bash "${BOOTSTRAP_ROOT}/bootstrap" --help)"
@@ -66,7 +67,7 @@ else
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
-manual="${BOOTSTRAP_ROOT}/docs/한국어-매뉴얼.md"
+manual="${BOOTSTRAP_ROOT}/docs/korean-manual.md"
 assert_file_contains "$manual" '빠른 시작' "Korean manual has quick start"
 assert_file_contains "$manual" 'MCP와 Figma' "Korean manual explains MCP and Figma"
 assert_file_contains "$manual" 'Kubernetes' "Korean manual explains Kubernetes lab"

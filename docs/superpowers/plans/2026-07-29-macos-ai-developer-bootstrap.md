@@ -39,7 +39,7 @@
 - `config/mcp-servers.json`: secret-free common MCP catalog.
 - `config/agent-targets.json`: supported client capabilities and locations.
 - `bin/ai-awake`: process-scoped macOS sleep-prevention wrapper.
-- `docs/한국어-매뉴얼.md`: complete Korean operator manual.
+- `docs/korean-manual.md`: complete Korean operator manual.
 - `config/zshrc.block`: managed AI-native shell configuration.
 - `config/AGENTS.shared.md`: shared behavior including CodeGraph indexing.
 - `scripts/discover-skills.mjs`: official/topic page discovery.

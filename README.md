@@ -11,7 +11,7 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 ./bootstrap doctor --json
 ```
 
-전체 설명과 운영 방법은 [한국어 매뉴얼](docs/한국어-매뉴얼.md)을
+전체 설명과 운영 방법은 [한국어 매뉴얼](docs/korean-manual.md)을
 참조하세요.
 
 ## 주요 원칙
