@@ -73,5 +73,10 @@ assert_file_contains "$manual" '빠른 시작' "Korean manual has quick start"
 assert_file_contains "$manual" 'MCP와 Figma' "Korean manual explains MCP and Figma"
 assert_file_contains "$manual" 'Kubernetes' "Korean manual explains Kubernetes lab"
 assert_file_contains "$manual" '문제 해결' "Korean manual has troubleshooting"
+assert_file_contains "${BOOTSTRAP_ROOT}/docs/standards.md" 'NIST SP 800-218' "standards evidence cites NIST SSDF"
+assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'flowchart LR' "architecture documents the bootstrap flow"
+assert_file_contains "${BOOTSTRAP_ROOT}/CHANGELOG.md" 'Unreleased' "changelog records unreleased changes"
+assert_file_contains "${BOOTSTRAP_ROOT}/VERSION" '0.1.0' "project version is explicit"
+assert_file_contains "${BOOTSTRAP_ROOT}/CLAUDE.md" 'AGENTS.md' "Claude instructions delegate to shared agent guidance"
 
 finish_tests

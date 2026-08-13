@@ -2,6 +2,7 @@
 
 새 macOS를 AI 개발용 워크스테이션으로 구성하는 멱등적 설치 도구입니다.
 Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
+현재 프로젝트 버전은 `0.1.0`입니다.
 
 ```bash
 ./bootstrap --dry-run
@@ -22,6 +23,7 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 - Glances는 `uv`의 `glances[all]`로 모든 선택 통합을 포함해 설치합니다.
 - Docker Desktop과 Podman 대신 Colima의 containerd/nerdctl을 사용합니다.
 - Kubernetes는 요청할 때만 별도 Colima 프로필로 시작합니다.
+- 표준 근거와 비인증 범위는 [보안·컴플라이언스 근거](docs/standards.md)에 기록합니다.
 - 설치 전 `--dry-run`, 설치 후 `doctor` 사용을 권장합니다.
 
 ## 지원 명령
@@ -35,8 +37,8 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 | `./bootstrap mcp` | MCP와 공용 에이전트 지침 동기화 |
 | `./bootstrap auth` | 대화형 로그인 |
 | `./bootstrap kubernetes` | 소규모 k3s 실습 프로필 시작 |
-| `./bootstrap doctor` | 20개 요구사항 읽기 전용 진단 |
-| `./bootstrap doctor --json` | 같은 20개 진단을 단일 JSON 객체로 stdout에 출력 |
+| `./bootstrap doctor` | 21개 요구사항 읽기 전용 진단 |
+| `./bootstrap doctor --json` | 같은 21개 진단을 단일 JSON 객체로 stdout에 출력 |
 
 ## 자동화용 진단 JSON
 

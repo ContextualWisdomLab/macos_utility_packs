@@ -86,7 +86,7 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
 report="${BOOTSTRAP_STATE_DIR}/doctor.json"
-for number in $(seq -w 1 20); do
+for number in $(seq -w 1 21); do
   assert_file_contains "$report" "\"REQ-${number}\"" "doctor reports REQ-${number}"
 done
 assert_file_contains "$report" '"status": "pass"' "doctor report contains passing checks"
@@ -98,7 +98,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] == 0
-assert len(value["checks"]) == 20
+assert len(value["checks"]) == 21
 assert all(item["status"] == "pass" for item in value["checks"])
 '; then
   pass "doctor JSON mode emits one parseable complete report"
@@ -114,7 +114,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] == 0
-assert len(value["checks"]) == 20
+assert len(value["checks"]) == 21
 '; then
   pass "bootstrap doctor --json exposes machine-readable diagnostics"
 else
@@ -153,6 +153,21 @@ assert_not_contains "$commands_before" ' add ' "doctor does not add configuratio
 assert_not_contains "$commands_before" ' init ' "doctor does not initialize CodeGraph"
 
 assert_file_contains "$report" 'glances[all] uv tool' "doctor reports Glances all extras evidence"
+
+if doctor_standards; then
+  pass "doctor reports local security standards evidence"
+else
+  fail "doctor reports local security standards evidence"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+printf '%s\n' 'incomplete standards evidence' > "${TEST_ROOT}/standards.md"
+if doctor_standards "${TEST_ROOT}/standards.md"; then
+  fail "standards doctor rejects incomplete evidence"
+else
+  pass "standards doctor rejects incomplete evidence"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
 
 if doctor_colima_runtime; then
   pass "doctor accepts an active containerd Colima runtime"
@@ -199,7 +214,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] > 0
-assert len(value["checks"]) == 20
+assert len(value["checks"]) == 21
 assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value["checks"])
 '; then
     pass "bootstrap doctor --json emits complete failure evidence before nonzero exit"

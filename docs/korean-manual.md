@@ -331,7 +331,7 @@ Codex, Claude, Antigravity의 대화형 로그인만 시작합니다. Copilot은
 ./bootstrap doctor
 ```
 
-`REQ-01`부터 `REQ-20`까지 `pass` 또는 `fail`로 출력합니다. JSON 결과는
+`REQ-01`부터 `REQ-21`까지 `pass` 또는 `fail`로 출력합니다. JSON 결과는
 `~/.local/state/macos-ai-bootstrap/doctor.json`에 저장됩니다. 로그인만
 남은 원격 MCP는 설치 실패와 구분해서 클라이언트의 MCP 메뉴에서
 확인합니다.
@@ -359,8 +359,25 @@ MCP 서버가 나타나지 않으면 클라이언트를 완전히 종료해 다�
 ```
 
 CodeGraph가 보이지 않으면 `command -v codegraph`와 `npm prefix --global`을
-확인합니다. Colima 문제가 있으면 `colima status`와 `colima logs`를
 확인합니다.
+
+Colima가 Homebrew 서비스 목록에 보이지 않으면 다음을 확인합니다.
+
+```bash
+brew services start colima
+brew services list | grep -E '^colima[[:space:]]'
+colima status --json
+nerdctl info
+```
+
+`doctor`는 서비스 등록뿐 아니라 실행 중인 기본 프로파일의 `runtime`이
+`containerd`인지도 확인합니다. 기존 프로파일이 `docker`로 만들어졌다면
+런타임은 기존 VM에서 자동 변경되지 않습니다. 설치기는 데이터 손실을 막기
+위해 기존 프로파일을 삭제하거나 재생성하지 않으므로, 백업과 별도 프로파일
+사용 여부를 먼저 결정한 뒤 사용자가 명시적으로 마이그레이션해야 합니다.
+
+표준 근거와 SOC 2·CSAP의 적용 경계는
+[보안·컴플라이언스 근거](standards.md)를 확인합니다.
 
 설정 백업은 `~/.local/state/macos-ai-bootstrap/backups`에 있습니다.
 설치기는 사용자 패키지나 임의 설정을 제거하지 않으므로, 복구는 백업을

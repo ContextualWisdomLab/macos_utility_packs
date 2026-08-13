@@ -110,6 +110,15 @@ doctor_glances_all() {
     doctor_file_contains "$receipt" 'extras = ["all"]'
 }
 
+doctor_standards() {
+  local file="${1:-${BOOTSTRAP_ROOT}/docs/standards.md}"
+  local marker
+  [[ -f "$file" ]] || return 1
+  for marker in "APA 7" "NIST SP 800-218" "SLSA v1.2" "SOC 2" "CSAP"; do
+    doctor_file_contains "$file" "$marker" || return 1
+  done
+}
+
 doctor_git_flow() {
   command_exists git || return 1
   local branches
@@ -242,6 +251,11 @@ run_doctor() {
   else
     doctor_add REQ-20 Awake-wrapper fail "ai-awake or caffeinate is missing"
   fi
+  if doctor_standards; then
+    doctor_add REQ-21 Security-and-compliance pass "local NIST, SLSA, SOC 2, and CSAP evidence is documented"
+  else
+    doctor_add REQ-21 Security-and-compliance fail "security and compliance evidence is missing or incomplete"
+  fi
 
   doctor_write_report
   rm -f "$doctor_results_file"
@@ -251,5 +265,5 @@ run_doctor() {
     record_result doctor failed "${doctor_failure_count} requirement(s) failed"
     return 1
   fi
-  record_result doctor unchanged "all 20 requirements passed"
+  record_result doctor unchanged "all 21 requirements passed"
 }
