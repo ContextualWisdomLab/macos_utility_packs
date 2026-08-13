@@ -14,6 +14,10 @@ attestation 또는 CSAP 인증을 주장하지 않는다.
 | SOC 2 2017 Trust Services Criteria (2022 points of focus) | 보안·가용성·처리무결성·기밀성·프라이버시 통제의 운영 증거를 분리해 기록 | SOC 2 감사보고서 또는 attestation |
 | CSAP | 클라우드 서비스 제공자 경계와 인증 필요성을 식별 | 이 로컬 설치 도구 또는 사용자의 클라우드가 CSAP 인증을 받았다는 주장 |
 
+2026년 8월 기준 NIST SP 800-218r1의 SSDF 1.2 문서는 Initial Public Draft다.
+따라서 이 저장소는 해당 초안을 최신 동향으로 추적하되, 최종 규범 기준으로
+오인하지 않도록 현재 최종본인 SP 800-218 SSDF 1.1을 기준선으로 사용한다.
+
 이 프로젝트는 외부 서비스·데이터베이스를 운영하는 SaaS가 아니라 사용자
 Mac에서 실행되는 설치·진단 도구다. 따라서 표준의 적용 여부는 배포 환경과
 조직 통제의 소유자에게 남으며, 이 저장소의 문서 존재만으로 인증 상태가
@@ -42,6 +46,11 @@ National Institute of Standards and Technology. (2022). *Secure software
 development framework (SSDF) version 1.1: Recommendations for mitigating the
 risk of software vulnerabilities* (NIST Special Publication 800-218).
 https://doi.org/10.6028/NIST.SP.800-218
+
+National Institute of Standards and Technology. (2025). *Secure software
+development framework (SSDF) version 1.2: Recommendations for mitigating the
+risk of software vulnerabilities* (NIST Special Publication 800-218 Rev. 1,
+Initial Public Draft). https://doi.org/10.6028/NIST.SP.800-218r1.ipd
 
 SLSA Community. (2025). *SLSA specification version 1.2*.
 https://slsa.dev/spec/v1.2/
