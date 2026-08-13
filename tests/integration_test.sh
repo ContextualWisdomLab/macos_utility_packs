@@ -78,5 +78,6 @@ assert_file_contains "${BOOTSTRAP_ROOT}/ARCHITECTURE.md" 'flowchart LR' "archite
 assert_file_contains "${BOOTSTRAP_ROOT}/CHANGELOG.md" 'Unreleased' "changelog records unreleased changes"
 assert_file_contains "${BOOTSTRAP_ROOT}/VERSION" '0.1.0' "project version is explicit"
 assert_file_contains "${BOOTSTRAP_ROOT}/CLAUDE.md" 'AGENTS.md' "Claude instructions delegate to shared agent guidance"
+assert_file_contains "${BOOTSTRAP_ROOT}/README.md" 'RUN_LIVE_TESTS=1' "README documents opt-in live host tests"
 
 finish_tests

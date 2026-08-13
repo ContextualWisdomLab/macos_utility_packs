@@ -7,6 +7,8 @@
 - Registered Colima with `brew services start colima` and verified its active
   runtime before reporting the container requirement as passing.
 - Added JSON doctor evidence, standards scope, and project architecture notes.
+- Added deterministic Python API/error-path tests with 100% executable-line
+  coverage and an opt-in live Homebrew/Colima runtime test.
 
 ## Versioning
 

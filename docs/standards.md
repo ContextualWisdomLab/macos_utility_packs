@@ -26,6 +26,10 @@ Mac에서 실행되는 설치·진단 도구다. 따라서 표준의 적용 여�
 ## 운영 증거
 
 - `scripts/test`는 변경 후 셸 테스트, 문법 검사, ShellCheck를 실행한다.
+- `tests/python_api_test.sh`는 표준 라이브러리 `trace`로 세 Python 보조
+  스크립트의 실행 가능 라인 커버리지 100%를 검증한다.
+- `tests/live_test.sh`는 `RUN_LIVE_TESTS=1`일 때 실제 Homebrew 서비스,
+  Colima 런타임, `nerdctl` 동작을 읽기 전용으로 검증한다.
 - `doctor --json`은 패키지를 설치하거나 설정을 변경하지 않고 실패 증거를
   JSON으로 남긴다.
 - 인증 토큰·API 키·OAuth 정보는 저장소와 로그에 기록하지 않는다.

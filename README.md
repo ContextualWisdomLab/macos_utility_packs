@@ -56,7 +56,11 @@ stdout에는 `generatedAt`, `checks`, `failures`를 가진 하나의 JSON 객체
 
 ```bash
 scripts/test
+RUN_LIVE_TESTS=1 bash tests/live_test.sh
 ```
 
 테스트는 임시 HOME과 mock 명령을 사용하며 실제 사용자 환경에 패키지를
-설치하지 않습니다.
+설치하지 않습니다. Python 보조 스크립트는 표준 라이브러리 `trace`로 실행
+가능 라인 100%를 검증합니다. `RUN_LIVE_TESTS=1`은 실제 Homebrew·Colima·
+`nerdctl` 상태를 읽어 운영 환경 증거를 수집하며, 패키지를 설치하거나
+프로파일을 삭제하지 않습니다.
