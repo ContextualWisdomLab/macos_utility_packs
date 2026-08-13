@@ -20,6 +20,17 @@ MOCK
   chmod +x "${TEST_ROOT}/bin/${command_name}"
 done
 
+export MOCK_COMMANDS_LOG="${TEST_ROOT}/commands.log"
+cat > "${TEST_ROOT}/bin/brew" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s %s\n' brew "$*" >> "$MOCK_COMMANDS_LOG"
+if [[ "$*" == "services list" ]]; then
+  printf 'colima\t%s\tuser\t/path/to/plist\n' "${MOCK_COLIMA_SERVICE_STATE:-started}"
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/brew"
+
 cat > "${TEST_ROOT}/bin/colima" <<'MOCK'
 #!/usr/bin/env bash
 if [[ "$*" == "status --json" ]]; then
@@ -153,6 +164,28 @@ assert_not_contains "$commands_before" ' add ' "doctor does not add configuratio
 assert_not_contains "$commands_before" ' init ' "doctor does not initialize CodeGraph"
 
 assert_file_contains "$report" 'glances[all] uv tool' "doctor reports Glances all extras evidence"
+
+if doctor_colima_service_is_registered; then
+  pass "doctor accepts a started Colima Homebrew service"
+else
+  fail "doctor accepts a started Colima Homebrew service"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+export MOCK_COLIMA_SERVICE_STATE=stopped
+if doctor_colima_service_is_registered; then
+  fail "doctor rejects a stopped Colima Homebrew service"
+else
+  pass "doctor rejects a stopped Colima Homebrew service"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+if run_doctor >/dev/null; then
+  fail "doctor fails when Colima is not a started Homebrew service"
+else
+  pass "doctor fails when Colima is not a started Homebrew service"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+unset MOCK_COLIMA_SERVICE_STATE
 
 if doctor_standards; then
   pass "doctor reports local security standards evidence"

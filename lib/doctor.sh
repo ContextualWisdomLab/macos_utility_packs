@@ -30,6 +30,12 @@ doctor_file_contains() {
   [[ -f "$file" ]] && grep -Fq "$pattern" "$file"
 }
 
+doctor_colima_service_is_registered() {
+  command_exists brew || return 1
+  brew services list 2>/dev/null |
+    awk '$1 == "colima" && $2 == "started" { found = 1 } END { exit !found }'
+}
+
 doctor_json_has_all_mcp() {
   local file="$1"
   local section="${2:-mcpServers}"
@@ -196,6 +202,7 @@ run_doctor() {
   fi
   if doctor_has_commands colima nerdctl &&
     doctor_file_contains "${BOOTSTRAP_ROOT}/config/colima.yaml" "runtime: containerd" &&
+    doctor_colima_service_is_registered &&
     colima_runtime_is_containerd; then
     doctor_add REQ-14 Containers pass "Colima default profile is running with containerd and nerdctl is available"
   else

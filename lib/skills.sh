@@ -173,7 +173,16 @@ install_one_skill() {
     # Return a distinct result so the report does not count a deliberate skip as an install.
     return 2
   fi
-  run_skills_add "$source" "${install_args[@]}"
+  local status
+  if run_skills_add "$source" "${install_args[@]}"; then
+    return 0
+  else
+    status=$?
+  fi
+  # A child CLI's status 2 is an installation failure when non-conflicting
+  # skills were selected; status 2 is reserved for the all-conflict skip above.
+  (( status == 2 )) && return 1
+  return "$status"
 }
 
 install_shared_skills() {

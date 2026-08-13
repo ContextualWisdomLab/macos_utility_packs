@@ -10,6 +10,8 @@
 - Added JSON doctor evidence, standards scope, and project architecture notes.
 - Added deterministic Python API/error-path tests with 100% executable-line
   coverage and an opt-in live Homebrew/Colima runtime test.
+- Tightened review paths: doctor requires a started Colima service, wildcard
+  child failures stay failures, and blank public docstrings are rejected.
 - Documented the central OpenCode/Noema PR loop and its 15/30-minute sweep
   cadence instead of adding a duplicate local scheduler.
 

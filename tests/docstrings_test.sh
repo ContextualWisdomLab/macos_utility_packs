@@ -13,23 +13,27 @@ import sys
 
 missing = []
 
+def has_nonempty_docstring(node):
+    return bool((ast.get_docstring(node) or "").strip())
+
+
 for raw_path in sys.argv[1:]:
     source_path = Path(raw_path)
     tree = ast.parse(source_path.read_text(), filename=str(source_path))
 
-    if ast.get_docstring(tree) is None:
+    if not has_nonempty_docstring(tree):
         missing.append(f"{source_path.name}: module")
 
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_"):
-            if ast.get_docstring(node) is None:
+            if not has_nonempty_docstring(node):
                 missing.append(f"{source_path.name}: function {node.name}")
         elif isinstance(node, ast.ClassDef) and not node.name.startswith("_"):
-            if ast.get_docstring(node) is None:
+            if not has_nonempty_docstring(node):
                 missing.append(f"{source_path.name}: class {node.name}")
             for member in node.body:
                 if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)) and not member.name.startswith("_"):
-                    if ast.get_docstring(member) is None:
+                    if not has_nonempty_docstring(member):
                         missing.append(f"{source_path.name}: method {node.name}.{member.name}")
 
 if missing:
