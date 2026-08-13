@@ -11,6 +11,8 @@ from typing import Any
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse target, catalog, section, and client-format command-line options."""
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", required=True, type=Path)
     parser.add_argument("--catalog", required=True, type=Path)
@@ -22,6 +24,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def vscode_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of an MCP entry in VS Code's server shape."""
+
     converted = dict(entry)
     if converted.get("type") == "http":
         converted["type"] = "http"
@@ -29,6 +33,8 @@ def vscode_entry(entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def antigravity_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    """Convert a generic MCP entry to Antigravity's serverUrl shape."""
+
     converted = dict(entry)
     converted.pop("type", None)
     url = converted.pop("url", None)
@@ -38,6 +44,8 @@ def antigravity_entry(entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_json(path: Path) -> dict[str, Any]:
+    """Load a JSON object, treating a missing or empty file as empty state."""
+
     if not path.exists() or not path.read_text().strip():
         return {}
     payload = json.loads(path.read_text())
@@ -47,6 +55,8 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def main() -> int:
+    """Merge catalog entries into a client JSON file with atomic replacement."""
+
     args = parse_args()
     target = load_json(args.target)
     catalog = load_json(args.catalog).get("mcpServers", {})
