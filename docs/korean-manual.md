@@ -100,8 +100,10 @@ Figma는 OAuth 로그인이 필요합니다. `./bootstrap auth` 안내 후 각
 
 Ponytail은 MCP가 아니라 에이전트 플러그인과 스킬입니다. 공용 스킬로
 설치하고 Codex, Claude, Copilot, Antigravity에서 지원되는 공식 플러그인
-명령도 실행합니다. VS Code/Copilot 에이전트에는 자동 적용되는 사용자
-지침도 배포합니다.
+명령도 실행합니다. 와일드카드 동기화에서도 `mcp`, `claude`, `codex`,
+`grok`, `build`처럼 클라이언트 명령과 정확히 충돌하는 스킬은 설치하지
+않습니다. VS Code/Copilot 에이전트에는 자동 적용되는 사용자 지침도
+배포합니다.
 
 CodeGraph는 글로벌 CLI와 MCP 서버로 설치합니다. 공용 지침은 저장소에
 들어갈 때 `.codegraph/` 인덱스가 없으면 별도 요청을 기다리지 않고 다음

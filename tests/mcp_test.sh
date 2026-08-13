@@ -147,4 +147,33 @@ assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'merge-codex-mcp.py' "Codex 
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'continuing with plugin reconciliation' "existing plugin marketplaces do not break idempotent reruns"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'agy plugin install https://github.com/DietrichGebert/ponytail' "Ponytail uses the official Antigravity plugin installer"
 
+source "${BOOTSTRAP_ROOT}/lib/skills.sh"
+ponytail_filter_log="${TEST_ROOT}/ponytail-filter.log"
+cat > "${TEST_ROOT}/bin/npx" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/npx"
+for command_name in npm codegraph; do
+  cat > "${TEST_ROOT}/bin/${command_name}" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+  chmod +x "${TEST_ROOT}/bin/${command_name}"
+done
+command_exists() {
+  [[ "$1" == "npx" || "$1" == "npm" || "$1" == "codegraph" ]]
+}
+install_one_skill() {
+  printf '%s\t%s\n' "$1" "$2" >> "$ponytail_filter_log"
+  return 2
+}
+if install_ai_extensions >/dev/null 2>&1; then
+  pass "Ponytail wildcard installation uses conflict filtering"
+else
+  fail "Ponytail wildcard installation uses conflict filtering"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+assert_file_contains "$ponytail_filter_log" $'DietrichGebert/ponytail\t*' "Ponytail wildcard reaches the shared skill filter"
+
 finish_tests

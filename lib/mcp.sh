@@ -111,14 +111,17 @@ install_ai_extensions() {
   fi
 
   if command_exists npx; then
-    (
-      cd "$HOME"
-      DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 \
-        run npx --yes skills add DietrichGebert/ponytail --skill '*' \
-          --agent universal --agent codex --agent claude-code \
-          --agent antigravity --agent antigravity-cli \
-          --agent github-copilot --yes
-    ) || failed=1
+    local ponytail_status
+    if install_one_skill DietrichGebert/ponytail '*'; then
+      :
+    else
+      ponytail_status=$?
+      # A wildcard containing only client-command conflicts is a deliberate
+      # skip, not an extension installation failure.
+      if (( ponytail_status != 2 )); then
+        failed=1
+      fi
+    fi
   else
     log "npx is unavailable; cannot install Ponytail shared skills"
     failed=1
