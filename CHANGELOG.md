@@ -5,7 +5,8 @@
 - Added Claude Desktop, Codex CLI/cask, ChatGPT Desktop, and Visual Studio Code.
 - Added conflict filtering for `mcp`, `claude`, `codex`, `grok`, and `build` skills.
 - Registered Colima with `brew services start colima` and verified its active
-  runtime before reporting the container requirement as passing.
+  runtime before reporting the container requirement as passing; installation
+  now fails closed when the active profile is Docker or unavailable.
 - Added JSON doctor evidence, standards scope, and project architecture notes.
 - Added deterministic Python API/error-path tests with 100% executable-line
   coverage and an opt-in live Homebrew/Colima runtime test.

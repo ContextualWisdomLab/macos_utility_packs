@@ -33,6 +33,24 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+colima_runtime_is_containerd() {
+  command_exists colima || return 1
+  colima status --json 2>/dev/null |
+    python3 -c '
+import json
+import sys
+
+try:
+    value = json.load(sys.stdin)
+except (json.JSONDecodeError, OSError, TypeError):
+    raise SystemExit(1)
+
+raise SystemExit(
+    0 if isinstance(value, dict) and value.get("runtime") == "containerd" else 1
+)
+'
+}
+
 csv_contains() {
   local csv="${1:-}"
   local value="$2"

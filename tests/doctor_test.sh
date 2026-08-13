@@ -169,7 +169,7 @@ else
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
-if doctor_colima_runtime; then
+if colima_runtime_is_containerd; then
   pass "doctor accepts an active containerd Colima runtime"
 else
   fail "doctor accepts an active containerd Colima runtime"
@@ -177,7 +177,7 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
 export MOCK_COLIMA_RUNTIME=docker
-if doctor_colima_runtime; then
+if colima_runtime_is_containerd; then
   fail "doctor rejects a Docker-runtime Colima profile"
 else
   pass "doctor rejects a Docker-runtime Colima profile"

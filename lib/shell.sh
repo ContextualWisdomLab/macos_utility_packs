@@ -119,6 +119,10 @@ configure_containers() {
 
     if command_exists brew; then
       run brew services start colima || failed=1
+      if (( failed == 0 )) && ! colima_runtime_is_containerd; then
+        log "Colima is not running with the required containerd runtime"
+        failed=1
+      fi
     else
       log "Homebrew is unavailable; cannot register the Colima service"
       failed=1
@@ -126,7 +130,7 @@ configure_containers() {
   fi
 
   if (( failed != 0 )); then
-    record_result containers failed "Colima service registration failed"
+    record_result containers failed "Colima service registration or containerd runtime verification failed"
     return 1
   fi
   record_result containers changed "Colima configured for containerd/nerdctl and brew service"

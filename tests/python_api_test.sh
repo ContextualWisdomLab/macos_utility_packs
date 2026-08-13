@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/macos-python-coverage.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
+export PYTHONDONTWRITEBYTECODE=1
 
 TRACE_DATA="${TEST_ROOT}/counts.dat"
 TRACE_DIR="${TEST_ROOT}/report"
