@@ -9,6 +9,7 @@ trap teardown_test_env EXIT
 cat > "${TEST_ROOT}/bin/brew" <<'MOCK'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$MOCK_BREW_LOG"
+exit "${MOCK_BREW_EXIT:-0}"
 MOCK
 chmod +x "${TEST_ROOT}/bin/brew"
 export MOCK_BREW_LOG="${TEST_ROOT}/brew-services.log"
@@ -38,6 +39,15 @@ assert_file_contains "$colima_config" 'enabled: false' "default Colima profile l
 printf 'user-owned: true\n' > "$colima_config"
 configure_containers >/dev/null
 assert_file_contains "$colima_config" 'user-owned: true' "existing Colima template is preserved"
+
+export MOCK_BREW_EXIT=1
+if configure_containers >/dev/null; then
+  fail "Colima service failure is propagated"
+else
+  pass "Colima service failure is propagated"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+unset MOCK_BREW_EXIT
 
 block_contents="$(cat "${BOOTSTRAP_ROOT}/config/zshrc.block")"
 assert_contains "$block_contents" 'pnpm' "pnpm is activated in shell"

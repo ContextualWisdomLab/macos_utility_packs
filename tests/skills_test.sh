@@ -63,6 +63,10 @@ if [[ "$*" == *"renamed/repo"* && "$*" == *"--list"* ]]; then
   printf '│    mcp\n│    current-skill\n'
   exit 0
 fi
+if [[ "$*" == *"conflicting/repo"* && "$*" == *"--list"* ]]; then
+  printf '│    mcp\n│    claude\n│    codex\n│    grok\n│    build\n'
+  exit 0
+fi
 if [[ "$*" == *"renamed/repo"* && "$*" == *"--skill old-name"* ]]; then
   exit 18
 fi
@@ -88,7 +92,7 @@ cat > "${HOME}/skills-lock.json" <<'JSON'
 JSON
 
 skills_list="${TEST_ROOT}/skills.tsv"
-printf 'vercel-labs/skills\tfind-skills\nalready/repo\t*\nopenai/skills\tdocs\nrenamed/repo\told-name\nbad/repo\tbroken-skill\nconflicting/repo\tmcp\nconflicting/repo\tclaude\nconflicting/repo\tcodex\nconflicting/repo\tgrok\nconflicting/repo\tbuild\n' > "$skills_list"
+printf 'vercel-labs/skills\tfind-skills\nalready/repo\t*\nopenai/skills\tdocs\nrenamed/repo\told-name\nbad/repo\tbroken-skill\nconflicting/repo\tmcp\nconflicting/repo\tclaude\nconflicting/repo\tcodex\nconflicting/repo\tgrok\nconflicting/repo\tbuild\nconflicting/repo\t*\n' > "$skills_list"
 export SKILLS_LIST_FILE="$skills_list"
 export SKILLS_CANONICAL_DIR="${HOME}/.agents/skills"
 
@@ -112,12 +116,13 @@ assert_contains "$npx_calls" '--agent antigravity-cli' "Antigravity CLI target i
 assert_contains "$npx_calls" '--agent github-copilot' "Copilot skill target is selected"
 assert_contains "$npx_calls" 'renamed/repo --skill current-skill' "stale topic names fall back to current source skills"
 assert_not_contains "$npx_calls" 'renamed/repo --skill mcp' "wildcard sources exclude MCP skill"
-assert_not_contains "$npx_calls" 'conflicting/repo' "client-command skill names are not installed"
+assert_contains "$npx_calls" 'conflicting/repo --list' "all-conflicting wildcard sources are inspected"
+assert_not_contains "$npx_calls" 'conflicting/repo --skill' "client-command skill names are not installed"
 
 report="${BOOTSTRAP_STATE_DIR}/skills-report.json"
 assert_file_contains "$report" '"failed": 1' "failure count is reported"
 assert_file_contains "$report" '"installed": 3' "new, wildcard, and fallback installations are reported"
-assert_file_contains "$report" '"skipped": 6' "installed and conflicting entries are skipped"
+assert_file_contains "$report" '"skipped": 7' "installed and conflicting entries are skipped"
 assert_file_contains "$report" '"skill": "broken-skill"' "failed skill is named"
 
 finish_tests

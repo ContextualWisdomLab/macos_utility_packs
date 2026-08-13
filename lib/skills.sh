@@ -170,7 +170,8 @@ install_one_skill() {
 
   if ((${#install_args[@]} == 0)); then
     log "Skipping ${source}: all skills conflict with client commands"
-    return 0
+    # Return a distinct result so the report does not count a deliberate skip as an install.
+    return 2
   fi
   run_skills_add "$source" "${install_args[@]}"
 }
@@ -219,19 +220,23 @@ install_shared_skills() {
       skipped=$((skipped + 1))
     elif install_one_skill "$source" "$skill"; then
       installed=$((installed + 1))
-    elif [[ "$skill" != "*" ]] &&
-      { grep -Fxq "$source" "$wildcard_reconciled" ||
-        install_one_skill "$source" "*"; }; then
-      # skills.sh topic entries can briefly retain an old name after its
-      # repository renames or consolidates a skill. Installing every current
-      # skill from that same source preserves the requested catalog coverage.
-      grep -Fxq "$source" "$wildcard_reconciled" ||
-        printf '%s\n' "$source" >> "$wildcard_reconciled"
-      installed=$((installed + 1))
     else
       status=$?
-      failed=$((failed + 1))
-      printf '%s\t%s\t%d\n' "$source" "$skill" "$status" >> "$failures"
+      if (( status == 2 )); then
+        skipped=$((skipped + 1))
+      elif [[ "$skill" != "*" ]] &&
+        { grep -Fxq "$source" "$wildcard_reconciled" ||
+          install_one_skill "$source" "*"; }; then
+        # skills.sh topic entries can briefly retain an old name after its
+        # repository renames or consolidates a skill. Installing every current
+        # skill from that same source preserves the requested catalog coverage.
+        grep -Fxq "$source" "$wildcard_reconciled" ||
+          printf '%s\n' "$source" >> "$wildcard_reconciled"
+        installed=$((installed + 1))
+      else
+        failed=$((failed + 1))
+        printf '%s\t%s\t%d\n' "$source" "$skill" "$status" >> "$failures"
+      fi
     fi
   done < "$list_file"
 
