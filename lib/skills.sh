@@ -13,6 +13,61 @@ skill_conflicts_with_client_command() {
   return 1
 }
 
+# Blocked shared-skill names live in config/skill-blacklist.json so operators can
+# extend the deny list without touching sync logic. Matching is exact and
+# case-insensitive; Unicode homoglyph variants must be listed explicitly because
+# tr folds ASCII case only.
+SKILL_BLACKLIST_FILE="${SKILL_BLACKLIST_FILE:-}"
+
+skill_blacklist_file() {
+  # Print the active deny-list path, honouring a test override when present.
+  if [[ -n "$SKILL_BLACKLIST_FILE" ]]; then
+    printf '%s\n' "$SKILL_BLACKLIST_FILE"
+    return 0
+  fi
+  printf '%s\n' "${BOOTSTRAP_ROOT}/config/skill-blacklist.json"
+}
+
+skill_blacklist_names() {
+  # Emit one blocked skill name per stdout line from the JSON deny list. An
+  # absent, unreadable, or malformed file fails open so a config typo can never
+  # break an otherwise healthy sync run.
+  local file
+  file="$(skill_blacklist_file)"
+  [[ -f "$file" ]] || return 0
+  python3 - "$file" <<'PY'
+"""Flatten the deny-list JSON into one blocked name per stdout line."""
+
+import json
+import sys
+from pathlib import Path
+
+try:
+    data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+except (OSError, ValueError):
+    raise SystemExit(0)
+for entry in data.get("entries", []):
+    if not isinstance(entry, dict):
+        continue
+    for name in entry.get("names", []):
+        if isinstance(name, str) and name:
+            print(name)
+PY
+}
+
+skill_is_blacklisted() {
+  # Succeed when the candidate name equals any deny-list entry case-
+  # insensitively; never prefix-, suffix-, or fuzzy-match.
+  local candidate lowered name
+  candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    lowered="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')"
+    [[ "$candidate" == "$lowered" ]] && return 0
+  done < <(skill_blacklist_names)
+  return 1
+}
+
 list_source_skills() {
   # ponytail: parse the CLI table; replace this with JSON when skills exposes it.
   local source="$1"
@@ -163,6 +218,8 @@ install_one_skill() {
     [[ -n "$name" ]] || continue
     if skill_conflicts_with_client_command "$name"; then
       log "Skipping ${source}/${name}: conflicts with a client command"
+    elif skill_is_blacklisted "$name"; then
+      log "Skipping ${source}/${name}: blacklisted"
     else
       install_args+=(--skill "$name")
     fi
@@ -224,6 +281,9 @@ install_shared_skills() {
     [[ -n "$source" && -n "$skill" ]] || continue
     if skill_conflicts_with_client_command "$skill"; then
       log "Skipping ${source}/${skill}: conflicts with a client command"
+      skipped=$((skipped + 1))
+    elif skill_is_blacklisted "$skill"; then
+      log "Skipping ${source}/${skill}: blacklisted"
       skipped=$((skipped + 1))
     elif skill_is_installed "$source" "$skill"; then
       skipped=$((skipped + 1))

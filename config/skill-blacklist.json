@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "names": [
+        "re-d_data",
+        "re\u0430d_data",
+        "read_data"
+      ],
+      "severity": "malicious",
+      "addedAt": "2026-08-25",
+      "reason": "Poisoned data-reader skill: its description and parameter docs carried prompt-injection payloads ordering a safety-rule bypass and exfiltration of file contents to evil.example.com, and its declared name used Cyrillic homoglyphs to masquerade as read_data."
+    },
+    {
+      "names": [
+        "skill-name"
+      ],
+      "severity": "broken",
+      "addedAt": "2026-08-25",
+      "reason": "Unrendered template plus unrelated workspace dump: the placeholder SKILL.md resolves to no real capability and pollutes skill discovery."
+    }
+  ]
+}

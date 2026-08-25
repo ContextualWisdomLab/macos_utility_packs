@@ -4,6 +4,9 @@
 
 - Added Claude Desktop, Codex CLI/cask, ChatGPT Desktop, and Visual Studio Code.
 - Added conflict filtering for `mcp`, `claude`, `codex`, `grok`, and `build` skills.
+- Added a JSON skill deny list (`config/skill-blacklist.json`) enforced by skills
+  sync so known malicious or broken shared skills, including the homoglyph-named
+  `re-d_data` prompt-injection payload, are skipped during discovery.
 - Registered Colima with `brew services start colima` and verified its active
   runtime before reporting the container requirement as passing; installation
   now fails closed when the active profile is Docker or unavailable.
