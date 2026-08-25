@@ -28,44 +28,36 @@ skill_blacklist_file() {
   printf '%s\n' "${BOOTSTRAP_ROOT}/config/skill-blacklist.json"
 }
 
-skill_blacklist_names() {
-  # Emit one blocked skill name per stdout line from the JSON deny list. An
-  # absent, unreadable, or malformed file fails open so a config typo can never
-  # break an otherwise healthy sync run.
-  local file
+skill_is_blacklisted() {
+  # Succeed when the candidate name equals any deny-list entry under full
+  # Unicode case folding (tr-based ASCII lowercasing would let Cyrillic
+  # homoglyph spellings slip through); never prefix-, suffix-, or fuzzy-match.
+  # A missing, unreadable, or malformed file fails open so a config typo can
+  # never break an otherwise healthy sync run.
+  local candidate file
+  candidate="${1:-}"
   file="$(skill_blacklist_file)"
-  [[ -f "$file" ]] || return 0
-  python3 - "$file" <<'PY'
-"""Flatten the deny-list JSON into one blocked name per stdout line."""
+  [[ -n "$candidate" && -f "$file" ]] || return 1
+  python3 - "$candidate" "$file" <<'PY'
+"""Case-fold the candidate and every deny-list name, then require an exact hit."""
 
 import json
 import sys
 from pathlib import Path
 
+candidate = sys.argv[1].casefold()
 try:
-    data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    data = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
 except (OSError, ValueError):
-    raise SystemExit(0)
+    raise SystemExit(1)
 for entry in data.get("entries", []):
     if not isinstance(entry, dict):
         continue
     for name in entry.get("names", []):
-        if isinstance(name, str) and name:
-            print(name)
+        if isinstance(name, str) and name.casefold() == candidate:
+            raise SystemExit(0)
+raise SystemExit(1)
 PY
-}
-
-skill_is_blacklisted() {
-  # Succeed when the candidate name equals any deny-list entry case-
-  # insensitively; never prefix-, suffix-, or fuzzy-match.
-  local candidate lowered name
-  candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
-  while IFS= read -r name; do
-    [[ -n "$name" ]] || continue
-    lowered="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')"
-    [[ "$candidate" == "$lowered" ]] && return 0
-  done < <(skill_blacklist_names)
-  return 1
 }
 
 list_source_skills() {

@@ -105,9 +105,11 @@ JSON
 
 skills_list="${TEST_ROOT}/skills.tsv"
 printf 'vercel-labs/skills\tfind-skills\nalready/repo\t*\nopenai/skills\tdocs\nrenamed/repo\told-name\nbad/repo\tbroken-skill\nconflicting/repo\tmcp\nconflicting/repo\tclaude\nconflicting/repo\tcodex\nconflicting/repo\tgrok\nconflicting/repo\tbuild\nconflicting/repo\t*\n' > "$skills_list"
-printf '%s\n' 'status-two/repo	*' >> "$skills_list"
-printf 'blacklisted/repo\tre-d_data\n' >> "$skills_list"
-printf 'blacklisted/repo\t*\n' >> "$skills_list"
+{
+  printf '%s\n' 'status-two/repo	*'
+  printf 'blacklisted/repo\tre-d_data\n'
+  printf 'blacklisted/repo\t*\n'
+} >> "$skills_list"
 export SKILLS_LIST_FILE="$skills_list"
 export SKILLS_CANONICAL_DIR="${HOME}/.agents/skills"
 
@@ -140,6 +142,17 @@ if skill_is_blacklisted 'RE-D_DATA' && skill_is_blacklisted 'skill-name' && ! sk
   pass "deny list matches case-insensitively without false positives"
 else
   fail "deny list matching is broken"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+unicode_probe="${TEST_ROOT}/unicode-blacklist.json"
+printf '{"version":1,"entries":[{"names":["RE\\u0410D_DATA"]}]}\n' > "$unicode_probe"
+if SKILL_BLACKLIST_FILE="$unicode_probe" skill_is_blacklisted $'re\u0430d_data' &&
+  skill_is_blacklisted $'re\u0430d_data' &&
+  ! SKILL_BLACKLIST_FILE="$unicode_probe" skill_is_blacklisted 'read-data'; then
+  pass "deny list folds Unicode homoglyph case before exact matching"
+else
+  fail "deny list misses Unicode homoglyph variants"
 fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
