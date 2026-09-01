@@ -15,8 +15,8 @@ skill_conflicts_with_client_command() {
 
 # Blocked shared-skill names live in config/skill-blacklist.json so operators can
 # extend the deny list without touching sync logic. Matching is exact and
-# case-insensitive; Unicode homoglyph variants must be listed explicitly because
-# tr folds ASCII case only.
+# Unicode-case-insensitive; cross-script homoglyph variants still require an
+# explicit deny-list entry because case folding does not normalize lookalikes.
 SKILL_BLACKLIST_FILE="${SKILL_BLACKLIST_FILE:-}"
 
 skill_blacklist_file() {
@@ -28,16 +28,47 @@ skill_blacklist_file() {
   printf '%s\n' "${BOOTSTRAP_ROOT}/config/skill-blacklist.json"
 }
 
+skill_blacklist_is_valid() {
+  # Validate the security policy before any installer call. A missing,
+  # unreadable, or structurally malformed deny list is a failed safety control,
+  # so shared-skill synchronization must stop instead of silently allowing all
+  # candidates through.
+  local file
+  file="$(skill_blacklist_file)"
+  [[ -f "$file" ]] || return 1
+  python3 - "$file" <<'PY'
+"""Validate the deny-list schema needed by the shell enforcement boundary."""
+
+import json
+import sys
+from pathlib import Path
+
+try:
+    data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+except (OSError, ValueError):
+    raise SystemExit(1)
+
+if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+    raise SystemExit(1)
+for entry in data["entries"]:
+    if not isinstance(entry, dict) or not isinstance(entry.get("names"), list):
+        raise SystemExit(1)
+    if not all(isinstance(name, str) and name for name in entry["names"]):
+        raise SystemExit(1)
+raise SystemExit(0)
+PY
+}
+
 skill_is_blacklisted() {
   # Succeed when the candidate name equals any deny-list entry under full
-  # Unicode case folding (tr-based ASCII lowercasing would let Cyrillic
-  # homoglyph spellings slip through); never prefix-, suffix-, or fuzzy-match.
-  # A missing, unreadable, or malformed file fails open so a config typo can
-  # never break an otherwise healthy sync run.
+  # Unicode case folding; never prefix-, suffix-, or fuzzy-match. Configuration
+  # errors conservatively count as blocked here as a race-safe backstop; the
+  # public sync boundary separately fails the whole operation during preflight.
   local candidate file
   candidate="${1:-}"
   file="$(skill_blacklist_file)"
-  [[ -n "$candidate" && -f "$file" ]] || return 1
+  [[ -n "$candidate" ]] || return 1
+  [[ -f "$file" ]] || return 0
   python3 - "$candidate" "$file" <<'PY'
 """Case-fold the candidate and every deny-list name, then require an exact hit."""
 
@@ -49,12 +80,16 @@ candidate = sys.argv[1].casefold()
 try:
     data = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
 except (OSError, ValueError):
-    raise SystemExit(1)
-for entry in data.get("entries", []):
-    if not isinstance(entry, dict):
-        continue
-    for name in entry.get("names", []):
-        if isinstance(name, str) and name.casefold() == candidate:
+    raise SystemExit(0)
+if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+    raise SystemExit(0)
+for entry in data["entries"]:
+    if not isinstance(entry, dict) or not isinstance(entry.get("names"), list):
+        raise SystemExit(0)
+    for name in entry["names"]:
+        if not isinstance(name, str) or not name:
+            raise SystemExit(0)
+        if name.casefold() == candidate:
             raise SystemExit(0)
 raise SystemExit(1)
 PY
@@ -248,6 +283,11 @@ install_shared_skills() {
   if ! command_exists npx; then
     die "npx is required for skills installation"
     record_result skills failed "npx missing"
+    return 1
+  fi
+  if ! skill_blacklist_is_valid; then
+    die "skill deny list is missing, unreadable, or malformed"
+    record_result skills failed "skill deny list invalid"
     return 1
   fi
 
