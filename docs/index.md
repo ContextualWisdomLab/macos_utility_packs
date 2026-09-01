@@ -4,7 +4,7 @@
 
 ## Start here
 
-1. Read the [repository overview](../README.md).
+1. Read the [repository overview](https://github.com/ContextualWisdomLab/macos_utility_packs/blob/develop/README.md).
 2. Preview changes with `./bootstrap --dry-run`.
 3. Run `./bootstrap` for the full workstation setup or choose a bounded stage.
 4. Complete interactive credentials with `./bootstrap auth`.
@@ -16,10 +16,11 @@ For the full operator flow, use the [Korean manual](korean-manual.md).
 
 The bootstrap favors repeatable package management, preserves user-managed configuration outside its owned surface, and uses Colima with containerd/nerdctl instead of silently changing container runtimes. Kubernetes is opt-in through a separate profile. Secrets and login material remain outside version control.
 
-- [Repository README](../README.md) — product scope, commands, diagnostics, and tests.
+- [Repository README](https://github.com/ContextualWisdomLab/macos_utility_packs/blob/develop/README.md) — product scope, commands, diagnostics, tests, and source-license boundary.
 - [Korean manual](korean-manual.md) — detailed installation and operation guidance.
 - [Standards and security evidence](standards.md) — security, compliance, and non-certification boundaries.
-- [Changelog](../CHANGELOG.md) — development changes and release/versioning rules.
+- [Changelog](https://github.com/ContextualWisdomLab/macos_utility_packs/blob/develop/CHANGELOG.md) — development changes and release/versioning rules.
+- [Apache License 2.0](https://github.com/ContextualWisdomLab/macos_utility_packs/blob/develop/LICENSE) — grant for ContextualWisdomLab-authored repository source and documentation after protected integration.
 
 ## Release status
 
