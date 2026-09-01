@@ -286,7 +286,7 @@ install_shared_skills() {
     return 1
   fi
   if ! skill_blacklist_is_valid; then
-    die "skill deny list is missing, unreadable, or malformed"
+    die "skill deny list is missing, unreadable, or malformed" || true
     record_result skills failed "skill deny list invalid"
     return 1
   fi
