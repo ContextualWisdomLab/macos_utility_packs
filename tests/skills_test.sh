@@ -68,6 +68,10 @@ if [[ "$*" == *"conflicting/repo"* && "$*" == *"--list"* ]]; then
   printf '│    mcp\n│    claude\n│    codex\n│    grok\n│    build\n'
   exit 0
 fi
+if [[ "$*" == *"blacklisted/repo"* && "$*" == *"--list"* ]]; then
+  printf '│    re-d_data\n│    good-one\n'
+  exit 0
+fi
 if [[ "$*" == *"status-two/repo"* && "$*" == *"--list"* ]]; then
   printf '│    current-skill\n'
   exit 0
@@ -101,7 +105,11 @@ JSON
 
 skills_list="${TEST_ROOT}/skills.tsv"
 printf 'vercel-labs/skills\tfind-skills\nalready/repo\t*\nopenai/skills\tdocs\nrenamed/repo\told-name\nbad/repo\tbroken-skill\nconflicting/repo\tmcp\nconflicting/repo\tclaude\nconflicting/repo\tcodex\nconflicting/repo\tgrok\nconflicting/repo\tbuild\nconflicting/repo\t*\n' > "$skills_list"
-printf '%s\n' 'status-two/repo	*' >> "$skills_list"
+{
+  printf '%s\n' 'status-two/repo	*'
+  printf 'blacklisted/repo\tre-d_data\n'
+  printf 'blacklisted/repo\t*\n'
+} >> "$skills_list"
 export SKILLS_LIST_FILE="$skills_list"
 export SKILLS_CANONICAL_DIR="${HOME}/.agents/skills"
 
@@ -127,11 +135,31 @@ assert_contains "$npx_calls" 'renamed/repo --skill current-skill' "stale topic n
 assert_not_contains "$npx_calls" 'renamed/repo --skill mcp' "wildcard sources exclude MCP skill"
 assert_contains "$npx_calls" 'conflicting/repo --list' "all-conflicting wildcard sources are inspected"
 assert_not_contains "$npx_calls" 'conflicting/repo --skill' "client-command skill names are not installed"
+assert_contains "$npx_calls" 'blacklisted/repo --skill good-one' "wildcard sources exclude deny-listed skills"
+assert_not_contains "$npx_calls" '--skill re-d_data' "deny-listed skills are never passed to the installer"
+
+if skill_is_blacklisted 'RE-D_DATA' && skill_is_blacklisted 'skill-name' && ! skill_is_blacklisted 'good-one'; then
+  pass "deny list matches case-insensitively without false positives"
+else
+  fail "deny list matching is broken"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+unicode_probe="${TEST_ROOT}/unicode-blacklist.json"
+printf '{"version":1,"entries":[{"names":["RE\\u0410D_DATA"]}]}\n' > "$unicode_probe"
+if SKILL_BLACKLIST_FILE="$unicode_probe" skill_is_blacklisted $'re\u0430d_data' &&
+  skill_is_blacklisted $'re\u0430d_data' &&
+  ! SKILL_BLACKLIST_FILE="$unicode_probe" skill_is_blacklisted 'read-data'; then
+  pass "deny list folds Unicode homoglyph case before exact matching"
+else
+  fail "deny list misses Unicode homoglyph variants"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
 
 report="${BOOTSTRAP_STATE_DIR}/skills-report.json"
 assert_file_contains "$report" '"failed": 2' "failure count is reported"
-assert_file_contains "$report" '"installed": 3' "new, wildcard, and fallback installations are reported"
-assert_file_contains "$report" '"skipped": 7' "installed and conflicting entries are skipped"
+assert_file_contains "$report" '"installed": 4' "new, wildcard, and fallback installations are reported"
+assert_file_contains "$report" '"skipped": 8' "installed, conflicting, and deny-listed entries are skipped"
 assert_file_contains "$report" '"skill": "broken-skill"' "failed skill is named"
 assert_file_contains "$report" '"source": "status-two/repo"' "wildcard status 2 is recorded as a failure"
 
