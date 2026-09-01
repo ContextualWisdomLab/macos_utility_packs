@@ -43,4 +43,27 @@ for blacklist_case in "$malformed_blacklist" "$missing_blacklist"; do
     "invalid deny-list configuration never reaches the installer"
 done
 
+production_state="${TEST_ROOT}/production-state"
+mkdir -p "$production_state" "${TEST_ROOT}/production-backups"
+if HOME="$HOME" \
+  PATH="$PATH" \
+  BOOTSTRAP_ROOT="$BOOTSTRAP_ROOT" \
+  BOOTSTRAP_STATE_DIR="$production_state" \
+  BOOTSTRAP_BACKUP_DIR="${TEST_ROOT}/production-backups" \
+  SKILLS_LIST_FILE="$skills_list" \
+  SKILLS_CANONICAL_DIR="$SKILLS_CANONICAL_DIR" \
+  SKILL_BLACKLIST_FILE="$malformed_blacklist" \
+  MOCK_NPX_LOG="$mock_log" \
+  bash -euo pipefail -c \
+    'source "$BOOTSTRAP_ROOT/lib/core.sh"; source "$BOOTSTRAP_ROOT/lib/skills.sh"; install_shared_skills' \
+    >/dev/null 2>&1; then
+  fail "production errexit boundary rejects malformed deny-list configuration"
+else
+  pass "production errexit boundary rejects malformed deny-list configuration"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+assert_file_contains "${production_state}/results.jsonl" \
+  '"phase":"skills","status":"failed","detail":"skill deny list invalid"' \
+  "production errexit boundary records the deny-list failure before exit"
+
 finish_tests
