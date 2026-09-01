@@ -1,5 +1,7 @@
 # macOS AI Developer Bootstrap
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ContextualWisdomLab/macos_utility_packs)
+
 새 macOS를 AI 개발용 워크스테이션으로 구성하는 멱등적 설치 도구입니다.
 Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 현재 프로젝트 버전은 `0.1.0`입니다.
@@ -13,7 +15,7 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 ```
 
 전체 설명과 운영 방법은 [한국어 매뉴얼](docs/korean-manual.md)을
-참조하세요.
+참조하세요. 공개 문서의 시작점은 [`docs/index.md`](docs/index.md)입니다.
 
 ## 주요 원칙
 
