@@ -5,13 +5,13 @@
 - Added Claude Desktop, Codex CLI/cask, ChatGPT Desktop, and Visual Studio Code.
 - Added conflict filtering for `mcp`, `claude`, `codex`, `grok`, and `build` skills.
 - Added a JSON skill deny list (`config/skill-blacklist.json`) enforced by skills
-  sync so known malicious or broken shared skills, including the homoglyph-named
-  `re-d_data` prompt-injection payload, are skipped before installation;
-  discovery listings may still surface blocked names. Matching uses full
-  Unicode case folding so homoglyph spellings cannot bypass the block.
-- Added a JSON skill deny list (`config/skill-blacklist.json`) enforced by skills
-  sync so known malicious or broken shared skills, including the homoglyph-named
-  `re-d_data` prompt-injection payload, are skipped during discovery.
+  sync so known malicious or broken shared skills, including the explicitly
+  registered homoglyph variants of the `re-d_data` prompt-injection payload,
+  are skipped before installation; discovery listings may still surface blocked
+  names. Matching Unicode-case-folds each explicitly listed name, while
+  cross-script lookalikes still require explicit deny-list entries. Missing,
+  unreadable, or malformed deny-list configuration fails the skills sync closed
+  before any installer call.
 - Registered Colima with `brew services start colima` and verified its active
   runtime before reporting the container requirement as passing; installation
   now fails closed when the active profile is Docker or unavailable.
