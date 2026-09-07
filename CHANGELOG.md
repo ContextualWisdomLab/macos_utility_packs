@@ -1,7 +1,12 @@
 # Changelog
 
-## [Unreleased] - 2026-08-13
+## [Unreleased] - 2026-09-07
 
+- Added Grok Build as a first-class bootstrap client: `grok-build` cask,
+  TOML MCP merge into `~/.grok/config.toml`, native `~/.grok/rules/AGENTS.md`,
+  CodeGraph `UserPromptSubmit` hook, Ponytail plugin `--trust` plus
+  `hooks/hooks.json`, doctor `REQ-22`, and `grok login`. The Homebrew formula
+  named `grok` is the unrelated regex tool and is not installed.
 - Added Claude Desktop, Codex CLI/cask, ChatGPT Desktop, and Visual Studio Code.
 - Added conflict filtering for `mcp`, `claude`, `codex`, `grok`, and `build` skills.
 - Registered Colima with `brew services start colima` and verified its active

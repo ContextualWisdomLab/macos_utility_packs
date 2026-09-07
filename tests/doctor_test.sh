@@ -7,7 +7,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
 
-mock_commands=(brew codex gh agy claude code copilot codegraph npx uvx mise uv node npm pnpm java go rustc cargo dotnet clang cmake ninja conan glances btop colima nerdctl kubectl helm k9s git openvpn caffeinate)
+mock_commands=(brew codex gh agy claude grok code copilot codegraph npx uvx mise uv node npm pnpm java go rustc cargo dotnet clang cmake ninja conan glances btop colima nerdctl kubectl helm k9s git openvpn caffeinate)
 for command_name in "${mock_commands[@]}"; do
   cat > "${TEST_ROOT}/bin/${command_name}" <<MOCK
 #!/usr/bin/env bash
@@ -40,7 +40,7 @@ exit 0
 MOCK
 chmod +x "${TEST_ROOT}/bin/colima"
 
-for agent_command in codex claude; do
+for agent_command in codex claude grok; do
   cat > "${TEST_ROOT}/bin/${agent_command}" <<MOCK
 #!/usr/bin/env bash
 printf '%s %s\n' '${agent_command}' "\$*" >> '${TEST_ROOT}/commands.log'
@@ -56,6 +56,8 @@ mkdir -p \
   "${HOME}/.agents/skills/find-skills" \
   "${HOME}/.copilot" \
   "${HOME}/.gemini/config" \
+  "${HOME}/.grok/rules" \
+  "${HOME}/.grok/hooks" \
   "${HOME}/Library/Application Support/Code/User" \
   "${HOME}/Applications/Passepartout.app" \
   "${HOME}/Applications/Hammerspoon.app" \
@@ -65,6 +67,9 @@ printf '%s\n' '[tool]' 'requirements = [{ name = "glances", extras = ["all"] }]'
   > "${HOME}/.local/share/uv/tools/glances/uv-receipt.toml"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:ai-native-shell' > "${HOME}/.zshrc"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:shared-agent-instructions' 'codegraph init' 'DietrichGebert/ponytail' > "${HOME}/.agents/AGENTS.md"
+cp "${HOME}/.agents/AGENTS.md" "${HOME}/.grok/rules/AGENTS.md"
+cp "${BOOTSTRAP_ROOT}/config/hooks/codegraph-prompt.json" "${HOME}/.grok/hooks/codegraph.json"
+printf '%s\n' '[mcp_servers.figma]' 'url = "https://mcp.figma.com/mcp"' > "${HOME}/.grok/config.toml"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.copilot/mcp-config.json"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.gemini/config/mcp_config.json"
 python3 "${BOOTSTRAP_ROOT}/scripts/merge-mcp.py" \
@@ -97,7 +102,7 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
 report="${BOOTSTRAP_STATE_DIR}/doctor.json"
-for number in $(seq -w 1 21); do
+for number in $(seq -w 1 22); do
   assert_file_contains "$report" "\"REQ-${number}\"" "doctor reports REQ-${number}"
 done
 assert_file_contains "$report" '"status": "pass"' "doctor report contains passing checks"
@@ -109,7 +114,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] == 0
-assert len(value["checks"]) == 21
+assert len(value["checks"]) == 22
 assert all(item["status"] == "pass" for item in value["checks"])
 '; then
   pass "doctor JSON mode emits one parseable complete report"
@@ -125,7 +130,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] == 0
-assert len(value["checks"]) == 21
+assert len(value["checks"]) == 22
 '; then
   pass "bootstrap doctor --json exposes machine-readable diagnostics"
 else
@@ -247,7 +252,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] > 0
-assert len(value["checks"]) == 21
+assert len(value["checks"]) == 22
 assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value["checks"])
 '; then
     pass "bootstrap doctor --json emits complete failure evidence before nonzero exit"

@@ -20,6 +20,7 @@
     {"id": "REQ-18", "name": "Korean operator manual", "evidence": ["docs/korean-manual.md"]},
     {"id": "REQ-19", "name": "Sebeolsik Korean IME", "evidence": ["built-in 3-Set Korean (390)", "Hammerspoon Left Shift + Space"]},
     {"id": "REQ-20", "name": "AI process sleep prevention", "evidence": ["ai-awake", "macOS caffeinate"]},
-    {"id": "REQ-21", "name": "Security and compliance evidence", "evidence": ["docs/standards.md", "NIST SSDF", "SLSA", "SOC 2", "CSAP"]}
+    {"id": "REQ-21", "name": "Security and compliance evidence", "evidence": ["docs/standards.md", "NIST SSDF", "SLSA", "SOC 2", "CSAP"]},
+    {"id": "REQ-22", "name": "Grok Build CLI", "evidence": ["grok command", "grok-build cask", "~/.grok/rules/AGENTS.md", "~/.grok/hooks/codegraph.json"]}
   ]
 }

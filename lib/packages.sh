@@ -50,5 +50,6 @@ install_packages() {
   # the exact publisher TeamIdentifier and the code signature both verify.
   clear_verified_cli_quarantine claude Q6L2SF6YDW
   clear_verified_cli_quarantine agy EQHXZ8M8AV
+  clear_verified_cli_quarantine grok 5Y6N3AJ54S
   record_result packages changed "Homebrew bundle reconciled"
 }

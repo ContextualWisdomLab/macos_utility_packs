@@ -43,6 +43,7 @@ brew "openvpn"
 cask "chatgpt" # Current ChatGPT Desktop app includes Codex
 cask "claude" # Claude Desktop
 cask "codex"
+cask "grok-build" # xAI Grok Build TUI; never the Homebrew formula named grok
 cask "antigravity-cli"
 cask "claude-code"
 cask "visual-studio-code"

@@ -20,6 +20,7 @@ run_auth() {
   command_exists gh && run gh auth login || failed=1
   command_exists codex && run codex login || failed=1
   command_exists claude && run claude auth login || failed=1
+  command_exists grok && run grok login || failed=1
   command_exists agy && run agy || failed=1
 
   log "GitHub Copilot CLI: start 'copilot' and use /login if not already authenticated."

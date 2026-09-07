@@ -6,6 +6,9 @@
     "claude": {
       "adapter": "claude-cli"
     },
+    "grok": {
+      "adapter": "grok-cli"
+    },
     "antigravity": {
       "path": "~/.gemini/config/mcp_config.json",
       "section": "mcpServers",

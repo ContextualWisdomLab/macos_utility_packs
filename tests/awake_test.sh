@@ -42,5 +42,6 @@ assert_file_contains "$manual" 'ai-awake codex' "Korean manual explains awake wr
 assert_file_contains "$manual" '절전' "Korean manual explains sleep prevention"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/zshrc.block" "codex-awake='ai-awake codex'" "shell exposes a Codex awake shortcut"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/zshrc.block" "claude-awake='ai-awake claude'" "shell exposes a Claude awake shortcut"
+assert_file_contains "${BOOTSTRAP_ROOT}/config/zshrc.block" "grok-awake='ai-awake grok'" "shell exposes a Grok awake shortcut"
 
 finish_tests

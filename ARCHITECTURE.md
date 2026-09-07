@@ -24,6 +24,10 @@ flowchart LR
 
 - `bootstrap` parses commands and selects phases.
 - `lib/*.sh` owns one phase each and writes only managed blocks or state files.
+  Grok Build reuses the Codex TOML MCP merger because both clients store
+  managed servers as `[mcp_servers.<name>]` in `config.toml`. Grok-only
+  surfaces (`~/.grok/rules/`, `~/.grok/hooks/`, Ponytail `hooks/hooks.json`)
+  stay in the Grok adapter rather than a copied catalog.
 - `config/` contains non-secret catalogs and templates.
 - `scripts/` contains standard-library Python helpers for catalog/config merging.
 - `tests/` uses temporary HOME fixtures; no test installs packages on the host.

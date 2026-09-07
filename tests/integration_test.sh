@@ -7,7 +7,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
 
-mock_commands=(uname sw_vers xcode-select brew mise corepack uv colima kubectl npx pnpm codex claude copilot)
+mock_commands=(uname sw_vers xcode-select brew mise corepack uv colima kubectl npx pnpm codex claude grok copilot)
 for command_name in "${mock_commands[@]}"; do
   cat > "${TEST_ROOT}/bin/${command_name}" <<MOCK
 #!/usr/bin/env bash
