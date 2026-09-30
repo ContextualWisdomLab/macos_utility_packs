@@ -1,5 +1,7 @@
 # macOS AI Developer Bootstrap
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ContextualWisdomLab/macos_utility_packs)
+
 새 macOS를 AI 개발용 워크스테이션으로 구성하는 멱등적 설치 도구입니다.
 Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 현재 프로젝트 버전은 `0.1.0`입니다.
@@ -13,7 +15,7 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 ```
 
 전체 설명과 운영 방법은 [한국어 매뉴얼](docs/korean-manual.md)을
-참조하세요.
+참조하세요. 공개 문서의 시작점은 [`docs/index.md`](docs/index.md)입니다.
 
 ## 주요 원칙
 
@@ -64,3 +66,12 @@ RUN_LIVE_TESTS=1 bash tests/live_test.sh
 가능 라인 100%를 검증합니다. `RUN_LIVE_TESTS=1`은 실제 Homebrew·Colima·
 `nerdctl` 상태를 읽어 운영 환경 증거를 수집하며, 패키지를 설치하거나
 프로파일을 삭제하지 않습니다.
+
+## 라이선스
+
+ContextualWisdomLab이 작성한 이 저장소의 원본 소스와 문서는
+[Apache License 2.0](LICENSE)으로 제공됩니다. Bootstrap이 설치하거나 호출하는
+Homebrew formula/cask, Colima, containerd/nerdctl, k3s, Glances, 개발 도구 및
+기타 외부 소프트웨어는 각각의 저작권자와 라이선스 조건을 따르며 이 저장소의
+Apache-2.0 부여로 재라이선스되지 않습니다. 새 외부 코드·자산·의존성을 반입할
+때에는 상업적 사용과 배포 모델에 맞는 별도 provenance/license 검토가 필요합니다.
