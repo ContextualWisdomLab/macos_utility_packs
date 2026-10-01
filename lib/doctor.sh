@@ -138,6 +138,16 @@ doctor_check_command() {
   fi
 }
 
+doctor_grok_build_identity() {
+  command_exists grok || return 1
+  command_exists codesign || return 1
+  local executable signature
+  executable="$(command -v grok)"
+  signature="$(codesign -dv --verbose=2 "$executable" 2>&1)" || return 1
+  printf '%s\n' "$signature" | grep -Fxq 'TeamIdentifier=5Y6N3AJ54S' &&
+    codesign --verify --strict "$executable" >/dev/null 2>&1
+}
+
 doctor_write_report() {
   local target="${BOOTSTRAP_STATE_DIR}/doctor.json"
   {
@@ -252,7 +262,11 @@ run_doctor() {
   else
     doctor_add REQ-21 Security-and-compliance fail "security and compliance evidence is missing or incomplete"
   fi
-  doctor_check_command REQ-22 Grok-Build grok
+  if doctor_grok_build_identity; then
+    doctor_add REQ-22 Grok-Build pass "resolved grok executable has a valid X.AI signature"
+  else
+    doctor_add REQ-22 Grok-Build fail "resolved grok executable is missing or lacks the verified X.AI signature"
+  fi
 
   doctor_write_report
   rm -f "$doctor_results_file"

@@ -7,8 +7,20 @@
   CodeGraph `UserPromptSubmit` hook, Ponytail plugin `--trust` plus
   `hooks/hooks.json`, doctor `REQ-22`, and `grok login`. The Homebrew formula
   named `grok` is the unrelated regex tool and is not installed.
+- Hardened the Grok boundary: doctor now verifies the resolved executable's
+  exact X.AI TeamIdentifier, MCP merge failures propagate, and Grok installs the
+  released Ponytail v4.10.0 commit instead of a mutable repository head.
 - Added Claude Desktop, Codex CLI/cask, ChatGPT Desktop, and Visual Studio Code.
 - Added conflict filtering for `mcp`, `claude`, `codex`, `grok`, and `build` skills.
+- Added a JSON skill deny list (`config/skill-blacklist.json`) enforced by skills
+  sync so known malicious or broken shared skills, including the explicitly
+  registered homoglyph variants of the `re-d_data` prompt-injection payload,
+  are skipped before installation; discovery listings may still surface blocked
+  names. Matching Unicode-case-folds each explicitly listed name, while
+  cross-script lookalikes still require explicit deny-list entries. Missing,
+  unreadable, malformed, missing-version, or unsupported-version deny-list
+  configuration fails the skills sync closed
+  before any installer call.
 - Registered Colima with `brew services start colima` and verified its active
   runtime before reporting the container requirement as passing; installation
   now fails closed when the active profile is Docker or unavailable.

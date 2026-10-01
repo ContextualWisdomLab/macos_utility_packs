@@ -27,6 +27,9 @@ printf '%s %s\n' brew "$*" >> "$MOCK_COMMANDS_LOG"
 if [[ "$*" == "services list" ]]; then
   printf 'colima\t%s\tuser\t/path/to/plist\n' "${MOCK_COLIMA_SERVICE_STATE:-started}"
 fi
+if [[ "$*" == "list --cask grok-build" && "${MOCK_GROK_CASK_PRESENT:-1}" != "1" ]]; then
+  exit 1
+fi
 exit 0
 MOCK
 chmod +x "${TEST_ROOT}/bin/brew"
@@ -82,6 +85,40 @@ cp "${BOOTSTRAP_ROOT}/bin/ai-awake" "${HOME}/.local/bin/ai-awake"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/doctor.sh"
+
+cat > "${TEST_ROOT}/bin/codesign" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "-dv" ]]; then
+  printf '%s\n' "${MOCK_CODESIGN_OUTPUT:-TeamIdentifier=5Y6N3AJ54S}" >&2
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/codesign"
+
+doctor_req22_status() {
+  run_doctor >/dev/null || true
+  python3 - "${BOOTSTRAP_STATE_DIR}/doctor.json" <<'PY'
+import json
+import sys
+
+report = json.load(open(sys.argv[1]))
+print(next(item for item in report["checks"] if item["id"] == "REQ-22")["status"])
+PY
+}
+
+export MOCK_CODESIGN_OUTPUT='TeamIdentifier=WRONG'
+assert_eq fail "$(doctor_req22_status)" \
+  "doctor rejects a shadowing grok command even when the cask receipt exists"
+
+export MOCK_GROK_CASK_PRESENT=0
+export MOCK_CODESIGN_OUTPUT='OtherField=TeamIdentifier=5Y6N3AJ54S'
+assert_eq fail "$(doctor_req22_status)" \
+  "doctor rejects a misleading TeamIdentifier substring"
+
+export MOCK_CODESIGN_OUTPUT='TeamIdentifier=5Y6N3AJ54S'
+assert_eq pass "$(doctor_req22_status)" \
+  "doctor accepts the exact verified X.AI signature"
+unset MOCK_GROK_CASK_PRESENT
 
 cat > "${TEST_ROOT}/bin/git" <<MOCK
 #!/usr/bin/env bash

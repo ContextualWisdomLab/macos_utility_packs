@@ -21,8 +21,9 @@ gap is repaired. Do not treat a GitHub “closed” label as completion.
 
 | Item | Value |
 | --- | --- |
-| Protected base | `develop@2368ed62937abfabb159c23aa52b81dde58b3dbe` |
-| This encoding branch | `feature/grok-native-client` @ `8aa3224217cdce7e78882ed3ec43a7dac4582e26` |
+| Protected target | `develop@2368ed62937abfabb159c23aa52b81dde58b3dbe` |
+| Immediate security base | `feat/skill-blacklist@97bd84eb5e6a43beb14533f3eaecc0725b58f117` |
+| This repair parent | `feature/grok-native-client@9aac33b973301df765fb00313df7d7fd189744c0` |
 | Encoding PR | [#6](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/6) |
 | ADR | [ADR-0002](adr/ADR-0002-grok-native-client.md) Proposed |
 | Product version | `0.1.0` development; not a release tag |
@@ -31,20 +32,15 @@ gap is repaired. Do not treat a GitHub “closed” label as completion.
 
 | PR | Intent | Head | Mergeable | Finding |
 | --- | --- | --- | --- | --- |
-| [#3](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/3) feat(skills) deny list | Security control for shared skills | `d74f327b25e6ed56f0d41dda0db616891be4ef8c` | blocked | Source is a repair-complete security delta. Required Security Scan fails at Dependency Review HTTP 403 owned by `ContextualWisdomLab/.github#810`. Keep open; do not merge through admin bypass. |
-| [#4](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/4) docs public surface | Pages-ready docs home, Apache-2.0 grant, DeepWiki badge | `7477c5808827361f8e839f1cc1600b5416e31145` | blocked | Same central Dependency Review gate. Independent of Grok encoding. Keep open. |
-| [#6](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/6) Grok native client | First-class Grok Build bootstrap | `8aa3224217cdce7e78882ed3ec43a7dac4582e26` | checks in progress | Local `scripts/test` GREEN. Merge only after required gates. |
-
-Local checkout of `feat/skill-blacklist` at `8348e4f` was behind origin
-when this baseline was written; do not restack Grok work onto that stale
-branch.
+| [#3](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/3) feat(skills) deny list | Security control for shared skills | `97bd84eb5e6a43beb14533f3eaecc0725b58f117` | checks pending | Version and validator fail-open paths are repaired with 29 focused tests; exact-head central gates and approval must regenerate. Keep Draft and open. |
+| [#4](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/4) docs public surface | Pages-ready docs home, Apache-2.0 grant, DeepWiki badge | `0b8075a2998057bed7714c1676594d60d80e7799` | review pending | All inline threads are resolved; it remains an independent Draft without a qualifying approval. Keep open. |
+| [#6](https://github.com/ContextualWisdomLab/macos_utility_packs/pull/6) Grok native client | First-class Grok Build bootstrap | repair parent `9aac33b973301df765fb00313df7d7fd189744c0` | repair in progress | RED cases reproduced the identity, error-propagation, and mutable-plugin defects. Stack on #3, then regenerate exact-head gates. |
 
 ## Current gaps
 
-1. **Grok native client (this change).** Closed in source on
-   `feature/grok-native-client` once tests are green and the PR is merged
-   to `develop`. Until merge, doctor on unmodified `develop` still omits
-   Grok.
+1. **Grok native client (this change).** Source repairs require verified
+   Grok identity, propagate MCP merge failures, and pin Ponytail v4.10.0.
+   Completion still requires exact-head gates, approval, and merge.
 2. **Dependency Review 403.** Owner is `.github`, not this repository.
    Sibling OSV/Trivy/Scorecard GREEN does not substitute.
 3. **CodeGraph installer has no Grok target.** Catalog TOML supplies the
@@ -80,12 +76,10 @@ flowchart LR
 
 ## Actions
 
-1. Land Grok encoding through normal protected review after local
-   `scripts/test` GREEN.
-2. Leave #3 and #4 open until `.github` Dependency Review is actually
-   GREEN on those exact heads.
-3. After Grok merge, restack #3/#4 only if they conflict; they currently
-   do not own Grok adapter files.
+1. Keep #3 Draft until its exact-head central checks and approval are GREEN.
+2. Non-force stack #6 on #3 because Grok Ponytail wildcard installation
+   consumes #3's fail-closed deny-list boundary; validate the integrated tree.
+3. Keep #4 open as an independent documentation sibling until approval.
 4. Keep issue #5 open. Start discovery-only work only after PR #3 lands
    and the named owner releases exist. Zero activation entries must still
    perform zero marketplace/install calls.

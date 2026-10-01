@@ -34,12 +34,16 @@ that consumed Claude-compat copies instead of native surfaces, we decided
 for a `grok-cli` adapter that reuses `scripts/merge-codex-mcp.py` against
 `~/.grok/config.toml`, writes `~/.grok/rules/AGENTS.md` and
 `~/.grok/hooks/codegraph.json`, installs Ponytail with `--trust`, and links
-`hooks/hooks.json`, and against installing Homebrew formula `grok`, calling
+`hooks/hooks.json`. The Ponytail source is pinned to released commit
+`e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156` (v4.10.0); MCP reconciliation
+propagates a merger failure before installing hooks; and doctor verifies the
+resolved executable's code signature and exact X.AI
+`TeamIdentifier=5Y6N3AJ54S`. We decided against installing Homebrew formula `grok`, calling
 `grok mcp add` (OAuth), adding a fake `codegraph install --target=grok`, or
 mirroring skills into `~/.grok/skills`, to achieve one catalog and one
 doctor contract for every supported client, accepting that Grok remains
-unavailable until `grok-build` is installed and that CodeGraph's installer
-does not own the Grok MCP stanza.
+unavailable until a correctly X.AI-signed executable resolves as `grok` and
+that CodeGraph's installer does not own the Grok MCP stanza.
 
 ## Alternatives considered
 
@@ -60,9 +64,12 @@ does not own the Grok MCP stanza.
 - Positive: `./bootstrap mcp`, `instructions`, `extensions`, `packages`,
   `auth`, and `doctor` treat Grok as a named client. Doctor `REQ-22` plus
   REQ-08/REQ-10 fail closed when Grok evidence is missing.
-- Negative: machines without `grok-build` fail doctor until the cask is
-  installed. Ponytail `hooks/hooks.json` is a bootstrap-owned symlink that
-  `grok plugin update ponytail` may drop; extensions must recreate it.
+- Negative: machines whose resolved `grok` executable lacks the exact X.AI
+  signature fail doctor even if a Homebrew cask receipt exists. Ponytail
+  `hooks/hooks.json` is a bootstrap-owned symlink that `grok plugin update
+  ponytail` may drop; extensions must recreate it.
+- Negative: the immutable Ponytail reference requires an explicit reviewed
+  bump to consume a later release.
 - Neutral: shared skills stay in `~/.agents/skills`, which Grok already
   scans; no second skill tree.
 
@@ -71,6 +78,7 @@ does not own the Grok MCP stanza.
 - Exact base: `develop@2368ed62937abfabb159c23aa52b81dde58b3dbe`
 - Live Grok `config.toml` MCP tables match Codex `mcp_servers.*`
 - Signed binary: `Developer ID Application: X.AI Corporation (5Y6N3AJ54S)`
+- Immutable Ponytail release: `v4.10.0@e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156`
 - Open PRs #3 and #4 remain independent and must not be closed for this delta
 
 ## References
@@ -89,3 +97,6 @@ xAI. (2026c). *Hooks*. Grok Build user guide.
 
 Anthropic. (2025). *Model Context Protocol specification*.
 https://modelcontextprotocol.io
+
+Gebert, D. (2026). *Ponytail v4.10.0* [Source code]. GitHub.
+https://github.com/DietrichGebert/ponytail/commit/e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156

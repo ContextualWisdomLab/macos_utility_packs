@@ -102,7 +102,7 @@ configure_grok_mcp() {
   [[ -f "$target" ]] && backup_file "$target"
   run python3 "${BOOTSTRAP_ROOT}/scripts/merge-codex-mcp.py" \
     --target "$target" \
-    --catalog "$(mcp_catalog_path)"
+    --catalog "$(mcp_catalog_path)" || return 1
   configure_grok_native_hooks
 }
 
@@ -188,7 +188,7 @@ install_ai_extensions() {
   if command_exists grok; then
     run grok plugin marketplace add DietrichGebert/ponytail ||
       log "Grok Ponytail marketplace is already present or could not be refreshed; continuing with plugin reconciliation"
-    run grok plugin install DietrichGebert/ponytail --trust || failed=1
+    run grok plugin install DietrichGebert/ponytail@e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156 --trust || failed=1
     ensure_grok_ponytail_plugin_hooks || failed=1
   fi
   if command_exists agy; then

@@ -149,7 +149,8 @@ assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'configure_grok_mcp' "Grok M
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/auth.sh" 'grok login' "Grok interactive login is part of bootstrap auth"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'continuing with plugin reconciliation' "existing plugin marketplaces do not break idempotent reruns"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'agy plugin install https://github.com/DietrichGebert/ponytail' "Ponytail uses the official Antigravity plugin installer"
-assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'grok plugin install DietrichGebert/ponytail --trust' "Grok Ponytail install trusts the plugin so hooks can load"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'grok plugin install DietrichGebert/ponytail@e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156 --trust' "Grok Ponytail install uses an immutable released commit"
+assert_not_contains "$(cat "${BOOTSTRAP_ROOT}/lib/mcp.sh")" 'grok plugin install DietrichGebert/ponytail --trust' "Grok Ponytail install rejects a mutable repository head"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'claude-codex-hooks.json' "Grok Ponytail plugin exposes hooks.json for native discovery"
 assert_file_contains "${BOOTSTRAP_ROOT}/config/hooks/codegraph-prompt.json" 'codegraph prompt-hook' "Grok native hook catalog invokes CodeGraph prompt-hook"
 
@@ -173,6 +174,16 @@ hook_first_hash="$(shasum -a 256 "${HOME}/.grok/hooks/codegraph.json" | awk '{pr
 configure_grok_native_hooks
 hook_second_hash="$(shasum -a 256 "${HOME}/.grok/hooks/codegraph.json" | awk '{print $1}')"
 assert_eq "$hook_first_hash" "$hook_second_hash" "Grok native hook install is byte-idempotent"
+
+if (
+  run() { return 1; }
+  configure_grok_mcp >/dev/null 2>&1
+); then
+  fail "Grok MCP configuration propagates catalog merge failure"
+else
+  pass "Grok MCP configuration propagates catalog merge failure"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
 
 plugin_dir="${HOME}/.grok/installed-plugins/ponytail-testhash"
 mkdir -p "${plugin_dir}/hooks"
