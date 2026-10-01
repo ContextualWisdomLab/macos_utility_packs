@@ -190,9 +190,7 @@ def topic_skills(documents: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
     return result
 
 
-def normalize_migrations(
-    skills: set[tuple[str, str]],
-) -> set[tuple[str, str]]:
+def normalize_migrations(skills: set[tuple[str, str]]) -> set[tuple[str, str]]:
     """Replace retired catalog sources with known current sources and drop unusable entries."""
 
     return {
