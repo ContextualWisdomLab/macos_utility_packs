@@ -101,16 +101,16 @@ for entry in data["entries"]:
             raise SystemExit(0)
         if name.casefold() == candidate:
             raise SystemExit(0)
-raise SystemExit(1)
+raise SystemExit(2)
 PY
   then
     status=0
   else
     status=$?
   fi
-  # Exit 1 is the validator's only clean "not listed" result. Interpreter or
+  # Exit 2 is the validator's only clean "not listed" result. Interpreter or
   # runtime failures must block the candidate instead of bypassing the policy.
-  (( status == 1 )) && return 1
+  (( status == 2 )) && return 1
   return 0
 }
 

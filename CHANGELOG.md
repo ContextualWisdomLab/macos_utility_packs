@@ -18,9 +18,9 @@
   are skipped before installation; discovery listings may still surface blocked
   names. Matching Unicode-case-folds each explicitly listed name, while
   cross-script lookalikes still require explicit deny-list entries. Missing,
-  unreadable, malformed, missing-version, or unsupported-version deny-list
-  configuration fails the skills sync closed
-  before any installer call.
+  unreadable, malformed, missing-version, or unsupported-version configuration,
+  as well as a validator runtime failure, stops the skills sync before any
+  installer call.
 - Registered Colima with `brew services start colima` and verified its active
   runtime before reporting the container requirement as passing; installation
   now fails closed when the active profile is Docker or unavailable.
