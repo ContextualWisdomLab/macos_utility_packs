@@ -28,9 +28,22 @@ source "${BOOTSTRAP_ROOT}/lib/skills.sh"
 
 malformed_blacklist="${TEST_ROOT}/malformed-blacklist.json"
 printf '%s\n' '[{"names":["safe-skill"]}]' > "$malformed_blacklist"
+missing_version_blacklist="${TEST_ROOT}/missing-version-blacklist.json"
+printf '%s\n' '{"entries":[]}' > "$missing_version_blacklist"
+unsupported_version_blacklist="${TEST_ROOT}/unsupported-version-blacklist.json"
+printf '%s\n' '{"version":2,"entries":[]}' > "$unsupported_version_blacklist"
+boolean_version_blacklist="${TEST_ROOT}/boolean-version-blacklist.json"
+printf '%s\n' '{"version":true,"entries":[]}' > "$boolean_version_blacklist"
 missing_blacklist="${TEST_ROOT}/missing-blacklist.json"
+valid_blacklist="${TEST_ROOT}/valid-blacklist.json"
+printf '%s\n' '{"version":1,"entries":[]}' > "$valid_blacklist"
 
-for blacklist_case in "$malformed_blacklist" "$missing_blacklist"; do
+for blacklist_case in \
+  "$malformed_blacklist" \
+  "$missing_version_blacklist" \
+  "$unsupported_version_blacklist" \
+  "$boolean_version_blacklist" \
+  "$missing_blacklist"; do
   export SKILL_BLACKLIST_FILE="$blacklist_case"
   : > "$mock_log"
   if install_shared_skills >/dev/null 2>&1; then
@@ -41,7 +54,38 @@ for blacklist_case in "$malformed_blacklist" "$missing_blacklist"; do
   TEST_COUNT=$((TEST_COUNT + 1))
   assert_eq "0" "$(grep -c -- '--skill safe-skill' "$mock_log" || true)" \
     "invalid deny-list configuration never reaches the installer"
+  if skill_is_blacklisted safe-skill; then
+    pass "invalid deny-list configuration blocks the direct candidate backstop"
+  else
+    fail "invalid deny-list configuration blocks the direct candidate backstop"
+  fi
+  TEST_COUNT=$((TEST_COUNT + 1))
+  : > "$mock_log"
+  direct_status=0
+  (
+    list_source_skills() { printf '%s\n' safe-skill; }
+    install_one_skill safe/repo '*'
+  ) >/dev/null 2>&1 || direct_status=$?
+  assert_eq "2" "$direct_status" \
+    "invalid deny-list configuration leaves no wildcard skill eligible"
+  assert_eq "0" "$(grep -c -- '--skill safe-skill' "$mock_log" || true)" \
+    "direct wildcard installation never bypasses an invalid deny list"
 done
+
+export SKILL_BLACKLIST_FILE="$valid_blacklist"
+: > "$mock_log"
+missing_python_status=0
+(
+  PATH="${TEST_ROOT}/without-python"
+  list_source_skills() { printf '%s\n' safe-skill; }
+  skill_conflicts_with_client_command() { return 1; }
+  run_skills_add() { printf '%s\n' "$*" >> "$mock_log"; }
+  install_one_skill safe/repo '*'
+) >/dev/null 2>&1 || missing_python_status=$?
+assert_eq "2" "$missing_python_status" \
+  "missing Python leaves no wildcard skill eligible"
+assert_eq "0" "$(grep -c -- '--skill safe-skill' "$mock_log" || true)" \
+  "validator execution failure never reaches the installer"
 
 production_state="${TEST_ROOT}/production-state"
 mkdir -p "$production_state" "${TEST_ROOT}/production-backups"

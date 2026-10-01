@@ -48,7 +48,12 @@ try:
 except (OSError, ValueError):
     raise SystemExit(1)
 
-if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+if (
+    not isinstance(data, dict)
+    or type(data.get("version")) is not int
+    or data["version"] != 1
+    or not isinstance(data.get("entries"), list)
+):
     raise SystemExit(1)
 for entry in data["entries"]:
     if not isinstance(entry, dict) or not isinstance(entry.get("names"), list):
@@ -64,12 +69,12 @@ skill_is_blacklisted() {
   # Unicode case folding; never prefix-, suffix-, or fuzzy-match. Configuration
   # errors conservatively count as blocked here as a race-safe backstop; the
   # public sync boundary separately fails the whole operation during preflight.
-  local candidate file
+  local candidate file status
   candidate="${1:-}"
   file="$(skill_blacklist_file)"
   [[ -n "$candidate" ]] || return 1
   [[ -f "$file" ]] || return 0
-  python3 - "$candidate" "$file" <<'PY'
+  if python3 - "$candidate" "$file" <<'PY'
 """Case-fold the candidate and every deny-list name, then require an exact hit."""
 
 import json
@@ -81,7 +86,12 @@ try:
     data = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
 except (OSError, ValueError):
     raise SystemExit(0)
-if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+if (
+    not isinstance(data, dict)
+    or type(data.get("version")) is not int
+    or data["version"] != 1
+    or not isinstance(data.get("entries"), list)
+):
     raise SystemExit(0)
 for entry in data["entries"]:
     if not isinstance(entry, dict) or not isinstance(entry.get("names"), list):
@@ -93,6 +103,15 @@ for entry in data["entries"]:
             raise SystemExit(0)
 raise SystemExit(1)
 PY
+  then
+    status=0
+  else
+    status=$?
+  fi
+  # Exit 1 is the validator's only clean "not listed" result. Interpreter or
+  # runtime failures must block the candidate instead of bypassing the policy.
+  (( status == 1 )) && return 1
+  return 0
 }
 
 list_source_skills() {
