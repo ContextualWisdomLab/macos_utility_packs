@@ -87,6 +87,22 @@ assert_eq "2" "$missing_python_status" \
 assert_eq "0" "$(grep -c -- '--skill safe-skill' "$mock_log" || true)" \
   "validator execution failure never reaches the installer"
 
+validator_failure_bin="${TEST_ROOT}/validator-failure-bin"
+mkdir -p "$validator_failure_bin"
+cat > "${validator_failure_bin}/python3" <<'MOCK'
+#!/usr/bin/env bash
+# Model an unhandled Python exception, which exits with status 1.
+exit 1
+MOCK
+chmod +x "${validator_failure_bin}/python3"
+export SKILL_BLACKLIST_FILE="$valid_blacklist"
+if PATH="${validator_failure_bin}:$PATH" skill_is_blacklisted safe-skill; then
+  pass "validator runtime failure blocks the direct candidate backstop"
+else
+  fail "validator runtime failure blocks the direct candidate backstop"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
 production_state="${TEST_ROOT}/production-state"
 mkdir -p "$production_state" "${TEST_ROOT}/production-backups"
 if HOME="$HOME" \
