@@ -40,7 +40,8 @@
 
 - 패키지 기반: Homebrew, Git, GitHub CLI
 - AI 데스크톱: ChatGPT Desktop(Codex 포함), Claude Desktop
-- AI CLI: Codex, Google Antigravity CLI(`agy`), Claude Code, GitHub Copilot CLI
+- AI CLI: Codex, Grok Build(`grok`, Homebrew cask `grok-build`), Google
+  Antigravity CLI(`agy`), Claude Code, GitHub Copilot CLI
 - 에디터: Visual Studio Code
 - 언어 격리: `mise`, `uv`, Node 24, Temurin JDK 21, Corepack, `pnpm`,
   Go, Rust, .NET 8, LLVM, CMake, Ninja, Conan
@@ -53,9 +54,11 @@
 대부분은 [`config/Brewfile`](../config/Brewfile)에서 Homebrew로 관리합니다.
 CodeGraph, Ponytail, 그리고 Glances의 모든 선택 기능을 제공하는
 `glances[all]`만 각각 공식 npm/플러그인/uv 경로를 함께 사용합니다.
-Claude Code와 Antigravity CLI cask가 비대화식 첫 실행에서 종료되는
-macOS 격리 문제는 각각 Anthropic과 Google의 고정된 Developer ID 팀
-식별자와 코드 서명을 모두 검증한 경우에만 해당 파일의 격리를 해제합니다.
+Claude Code, Antigravity CLI, Grok Build cask가 비대화식 첫 실행에서
+종료되는 macOS 격리 문제는 각각 Anthropic, Google, X.AI Corporation의
+고정된 Developer ID 팀 식별자와 코드 서명을 모두 검증한 경우에만 해당
+파일의 격리를 해제합니다. Homebrew formula `grok`는 정규식 도구라
+설치하지 않습니다.
 
 ## 단계별 실행
 
@@ -75,8 +78,8 @@ macOS 격리 문제는 각각 Anthropic과 Google의 고정된 Developer ID 팀
 
 ## MCP와 Figma
 
-다음 서버를 Codex, Claude Code, Antigravity, VS Code, Copilot CLI에
-공통 등록합니다.
+다음 서버를 Codex, Grok Build, Claude Code, Antigravity, VS Code,
+Copilot CLI에 공통 등록합니다.
 
 - Sequential Thinking
 - Time
@@ -86,7 +89,12 @@ macOS 격리 문제는 각각 Anthropic과 Google의 고정된 Developer ID 팀
 - CodeGraph
 - Figma 공식 원격 MCP (`https://mcp.figma.com/mcp`)
 
-Codex와 Claude는 각 CLI의 MCP 관리 명령을 사용합니다. Antigravity의
+Codex와 Grok Build는 같은 `[mcp_servers.<name>]` TOML 형식이라
+OAuth를 건드리지 않고 카탈로그를 `~/.codex/config.toml`과
+`~/.grok/config.toml`에 병합합니다. Grok 공용 지침은
+`~/.grok/rules/AGENTS.md`에 두고, CodeGraph prompt-hook은
+`~/.grok/hooks/codegraph.json`에 둡니다. Claude는 CLI MCP 관리
+명령을 사용합니다. Antigravity의
 공식 전역 파일 `~/.gemini/config/mcp_config.json`에는 원격 서버를
 `serverUrl` 형식으로 변환합니다. Antigravity,
 VS Code, Copilot은 사용자 JSON 설정에 관리 서버만 병합합니다. 기존의
@@ -99,8 +107,11 @@ Figma는 OAuth 로그인이 필요합니다. `./bootstrap auth` 안내 후 각
 ## Ponytail과 CodeGraph
 
 Ponytail은 MCP가 아니라 에이전트 플러그인과 스킬입니다. 공용 스킬로
-설치하고 Codex, Claude, Copilot, Antigravity에서 지원되는 공식 플러그인
-명령도 실행합니다. 와일드카드 동기화에서도 `mcp`, `claude`, `codex`,
+설치하고 Codex, Grok Build, Claude, Copilot, Antigravity에서 지원되는
+공식 플러그인 명령도 실행합니다. Grok는 플러그인 hooks를
+`hooks/hooks.json`으로만 자동 적재하므로 Ponytail의
+`claude-codex-hooks.json`을 그 이름으로 연결합니다. 와일드카드
+동기화에서도 `mcp`, `claude`, `codex`,
 `grok`, `build`처럼 클라이언트 명령과 정확히 충돌하는 스킬은 설치하지
 않습니다. VS Code/Copilot 에이전트에는 자동 적용되는 사용자 지침도
 배포합니다.
@@ -307,7 +318,7 @@ ai-awake agy
 ai-awake copilot
 ```
 
-새 셸에서는 `codex-awake`와 `claude-awake` 단축 명령도 같은 래퍼를
+새 셸에서는 `codex-awake`, `claude-awake`, `grok-awake` 단축 명령도 같은 래퍼를
 실행합니다.
 
 인자도 그대로 전달할 수 있습니다.
@@ -319,7 +330,7 @@ ai-awake codex exec "테스트를 실행하고 실패를 수정해"
 ## 인증과 비밀정보
 
 `./bootstrap`은 토큰을 요구하지 않습니다. `./bootstrap auth`는 GitHub,
-Codex, Claude, Antigravity의 대화형 로그인만 시작합니다. Copilot은
+Codex, Grok Build(`grok login`), Claude, Antigravity의 대화형 로그인만 시작합니다. Copilot은
 대화형 세션에서 `/login`, Figma는 각 MCP 화면에서 OAuth를 완료합니다.
 
 `.env`, API 키, OAuth 토큰, VPN 프로필과 인증서를 저장소에 넣지
@@ -331,7 +342,7 @@ Codex, Claude, Antigravity의 대화형 로그인만 시작합니다. Copilot은
 ./bootstrap doctor
 ```
 
-`REQ-01`부터 `REQ-21`까지 `pass` 또는 `fail`로 출력합니다. JSON 결과는
+`REQ-01`부터 `REQ-22`까지 `pass` 또는 `fail`로 출력합니다. JSON 결과는
 `~/.local/state/macos-ai-bootstrap/doctor.json`에 저장됩니다. 로그인만
 남은 원격 MCP는 설치 실패와 구분해서 클라이언트의 MCP 메뉴에서
 확인합니다.

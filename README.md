@@ -37,8 +37,8 @@ Apple Silicon과 Intel, macOS 14 이상을 지원합니다.
 | `./bootstrap mcp` | MCP와 공용 에이전트 지침 동기화 |
 | `./bootstrap auth` | 대화형 로그인 |
 | `./bootstrap kubernetes` | 소규모 k3s 실습 프로필 시작 |
-| `./bootstrap doctor` | 21개 요구사항 읽기 전용 진단 |
-| `./bootstrap doctor --json` | 같은 21개 진단을 단일 JSON 객체로 stdout에 출력 |
+| `./bootstrap doctor` | 22개 요구사항 읽기 전용 진단 |
+| `./bootstrap doctor --json` | 같은 22개 진단을 단일 JSON 객체로 stdout에 출력 |
 
 ## 자동화용 진단 JSON
 

@@ -63,6 +63,49 @@ configure_codex_mcp() {
     --catalog "$(mcp_catalog_path)"
 }
 
+configure_grok_native_hooks() {
+  local hooks_dir="${HOME}/.grok/hooks"
+  local source_file="${BOOTSTRAP_ROOT}/config/hooks/codegraph-prompt.json"
+  local target="${hooks_dir}/codegraph.json"
+  mkdir -p "$hooks_dir"
+  if [[ -f "$target" ]] && cmp -s "$source_file" "$target"; then
+    return 0
+  fi
+  [[ -f "$target" ]] && backup_file "$target"
+  local temporary
+  temporary="$(mktemp "${TMPDIR:-/tmp}/grok-hook.XXXXXX")"
+  cp "$source_file" "$temporary"
+  mv "$temporary" "$target"
+}
+
+ensure_grok_ponytail_plugin_hooks() {
+  local plugin_root="${HOME}/.grok/installed-plugins"
+  local plugin_dir
+  [[ -d "$plugin_root" ]] || return 0
+  while IFS= read -r plugin_dir; do
+    if [[ -f "${plugin_dir}/hooks/claude-codex-hooks.json" ]]; then
+      ln -sfn claude-codex-hooks.json "${plugin_dir}/hooks/hooks.json"
+    fi
+  done < <(find "$plugin_root" -mindepth 1 -maxdepth 1 -type d -name 'ponytail-*')
+}
+
+configure_grok_mcp() {
+  if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
+    log "DRY-RUN reconcile Grok MCP catalog and native hooks"
+    return 0
+  fi
+  if ! command_exists grok; then
+    log "Grok is unavailable; cannot configure its MCP catalog"
+    return 1
+  fi
+  local target="${HOME}/.grok/config.toml"
+  [[ -f "$target" ]] && backup_file "$target"
+  run python3 "${BOOTSTRAP_ROOT}/scripts/merge-codex-mcp.py" \
+    --target "$target" \
+    --catalog "$(mcp_catalog_path)" || return 1
+  configure_grok_native_hooks
+}
+
 configure_claude_mcp() {
   if [[ "$BOOTSTRAP_DRY_RUN" == "1" ]]; then
     log "DRY-RUN reconcile Claude Code MCP catalog"
@@ -142,6 +185,12 @@ install_ai_extensions() {
       log "Claude Ponytail marketplace is already present or could not be refreshed; continuing with plugin reconciliation"
     run claude plugin install ponytail@ponytail || failed=1
   fi
+  if command_exists grok; then
+    run grok plugin marketplace add DietrichGebert/ponytail ||
+      log "Grok Ponytail marketplace is already present or could not be refreshed; continuing with plugin reconciliation"
+    run grok plugin install DietrichGebert/ponytail@e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156 --trust || failed=1
+    ensure_grok_ponytail_plugin_hooks || failed=1
+  fi
   if command_exists agy; then
     run agy plugin install https://github.com/DietrichGebert/ponytail || failed=1
   fi
@@ -162,6 +211,7 @@ configure_mcp() {
     case "$adapter" in
       codex-cli) configure_codex_mcp || failures=$((failures + 1)) ;;
       claude-cli) configure_claude_mcp || failures=$((failures + 1)) ;;
+      grok-cli) configure_grok_mcp || failures=$((failures + 1)) ;;
       json) configure_json_target "$path" "$section" "$format" || failures=$((failures + 1)) ;;
       *) log "unknown MCP adapter for ${name}: ${adapter}"; failures=$((failures + 1)) ;;
     esac
@@ -187,6 +237,7 @@ configure_agent_instructions() {
     "${HOME}/.agents/AGENTS.md"
     "${HOME}/.codex/AGENTS.md"
     "${HOME}/.claude/CLAUDE.md"
+    "${HOME}/.grok/rules/AGENTS.md"
     "${HOME}/.copilot/copilot-instructions.md"
     "${HOME}/.gemini/GEMINI.md"
   )

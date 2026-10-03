@@ -7,7 +7,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test_helper.sh"
 setup_test_env
 trap teardown_test_env EXIT
 
-mock_commands=(brew codex gh agy claude code copilot codegraph npx uvx mise uv node npm pnpm java go rustc cargo dotnet clang cmake ninja conan glances btop colima nerdctl kubectl helm k9s git openvpn caffeinate)
+mock_commands=(brew codex gh agy claude grok code copilot codegraph npx uvx mise uv node npm pnpm java go rustc cargo dotnet clang cmake ninja conan glances btop colima nerdctl kubectl helm k9s git openvpn caffeinate)
 for command_name in "${mock_commands[@]}"; do
   cat > "${TEST_ROOT}/bin/${command_name}" <<MOCK
 #!/usr/bin/env bash
@@ -27,6 +27,9 @@ printf '%s %s\n' brew "$*" >> "$MOCK_COMMANDS_LOG"
 if [[ "$*" == "services list" ]]; then
   printf 'colima\t%s\tuser\t/path/to/plist\n' "${MOCK_COLIMA_SERVICE_STATE:-started}"
 fi
+if [[ "$*" == "list --cask grok-build" && "${MOCK_GROK_CASK_PRESENT:-1}" != "1" ]]; then
+  exit 1
+fi
 exit 0
 MOCK
 chmod +x "${TEST_ROOT}/bin/brew"
@@ -40,7 +43,7 @@ exit 0
 MOCK
 chmod +x "${TEST_ROOT}/bin/colima"
 
-for agent_command in codex claude; do
+for agent_command in codex claude grok; do
   cat > "${TEST_ROOT}/bin/${agent_command}" <<MOCK
 #!/usr/bin/env bash
 printf '%s %s\n' '${agent_command}' "\$*" >> '${TEST_ROOT}/commands.log'
@@ -56,6 +59,8 @@ mkdir -p \
   "${HOME}/.agents/skills/find-skills" \
   "${HOME}/.copilot" \
   "${HOME}/.gemini/config" \
+  "${HOME}/.grok/rules" \
+  "${HOME}/.grok/hooks" \
   "${HOME}/Library/Application Support/Code/User" \
   "${HOME}/Applications/Passepartout.app" \
   "${HOME}/Applications/Hammerspoon.app" \
@@ -65,6 +70,9 @@ printf '%s\n' '[tool]' 'requirements = [{ name = "glances", extras = ["all"] }]'
   > "${HOME}/.local/share/uv/tools/glances/uv-receipt.toml"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:ai-native-shell' > "${HOME}/.zshrc"
 printf '%s\n' '# BEGIN macos-ai-bootstrap:shared-agent-instructions' 'codegraph init' 'DietrichGebert/ponytail' > "${HOME}/.agents/AGENTS.md"
+cp "${HOME}/.agents/AGENTS.md" "${HOME}/.grok/rules/AGENTS.md"
+cp "${BOOTSTRAP_ROOT}/config/hooks/codegraph-prompt.json" "${HOME}/.grok/hooks/codegraph.json"
+printf '%s\n' '[mcp_servers.figma]' 'url = "https://mcp.figma.com/mcp"' > "${HOME}/.grok/config.toml"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.copilot/mcp-config.json"
 cp "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "${HOME}/.gemini/config/mcp_config.json"
 python3 "${BOOTSTRAP_ROOT}/scripts/merge-mcp.py" \
@@ -77,6 +85,40 @@ cp "${BOOTSTRAP_ROOT}/bin/ai-awake" "${HOME}/.local/bin/ai-awake"
 
 source "${BOOTSTRAP_ROOT}/lib/core.sh"
 source "${BOOTSTRAP_ROOT}/lib/doctor.sh"
+
+cat > "${TEST_ROOT}/bin/codesign" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "-dv" ]]; then
+  printf '%s\n' "${MOCK_CODESIGN_OUTPUT:-TeamIdentifier=5Y6N3AJ54S}" >&2
+fi
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/codesign"
+
+doctor_req22_status() {
+  run_doctor >/dev/null || true
+  python3 - "${BOOTSTRAP_STATE_DIR}/doctor.json" <<'PY'
+import json
+import sys
+
+report = json.load(open(sys.argv[1]))
+print(next(item for item in report["checks"] if item["id"] == "REQ-22")["status"])
+PY
+}
+
+export MOCK_CODESIGN_OUTPUT='TeamIdentifier=WRONG'
+assert_eq fail "$(doctor_req22_status)" \
+  "doctor rejects a shadowing grok command even when the cask receipt exists"
+
+export MOCK_GROK_CASK_PRESENT=0
+export MOCK_CODESIGN_OUTPUT='OtherField=TeamIdentifier=5Y6N3AJ54S'
+assert_eq fail "$(doctor_req22_status)" \
+  "doctor rejects a misleading TeamIdentifier substring"
+
+export MOCK_CODESIGN_OUTPUT='TeamIdentifier=5Y6N3AJ54S'
+assert_eq pass "$(doctor_req22_status)" \
+  "doctor accepts the exact verified X.AI signature"
+unset MOCK_GROK_CASK_PRESENT
 
 cat > "${TEST_ROOT}/bin/git" <<MOCK
 #!/usr/bin/env bash
@@ -97,7 +139,7 @@ fi
 TEST_COUNT=$((TEST_COUNT + 1))
 
 report="${BOOTSTRAP_STATE_DIR}/doctor.json"
-for number in $(seq -w 1 21); do
+for number in $(seq -w 1 22); do
   assert_file_contains "$report" "\"REQ-${number}\"" "doctor reports REQ-${number}"
 done
 assert_file_contains "$report" '"status": "pass"' "doctor report contains passing checks"
@@ -109,7 +151,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] == 0
-assert len(value["checks"]) == 21
+assert len(value["checks"]) == 22
 assert all(item["status"] == "pass" for item in value["checks"])
 '; then
   pass "doctor JSON mode emits one parseable complete report"
@@ -125,7 +167,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] == 0
-assert len(value["checks"]) == 21
+assert len(value["checks"]) == 22
 '; then
   pass "bootstrap doctor --json exposes machine-readable diagnostics"
 else
@@ -247,7 +289,7 @@ import json
 import sys
 value = json.load(sys.stdin)
 assert value["failures"] > 0
-assert len(value["checks"]) == 21
+assert len(value["checks"]) == 22
 assert any(item["id"] == "REQ-02" and item["status"] == "fail" for item in value["checks"])
 '; then
     pass "bootstrap doctor --json emits complete failure evidence before nonzero exit"

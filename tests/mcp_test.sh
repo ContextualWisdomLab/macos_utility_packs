@@ -25,7 +25,7 @@ PY
   TEST_COUNT=$((TEST_COUNT + 1))
 done
 
-for target in codex claude antigravity vscode copilot; do
+for target in codex claude grok antigravity vscode copilot; do
   if python3 - "$targets" "$target" <<'PY'
 import json, sys
 data = json.load(open(sys.argv[1]))
@@ -133,6 +133,7 @@ assert_eq "1" "$(grep -c 'BEGIN macos-ai-bootstrap:shared-agent-instructions' "$
 for client_instructions in \
   "${HOME}/.codex/AGENTS.md" \
   "${HOME}/.claude/CLAUDE.md" \
+  "${HOME}/.grok/rules/AGENTS.md" \
   "${HOME}/.copilot/copilot-instructions.md" \
   "${HOME}/.gemini/GEMINI.md"; do
   assert_file_contains "$client_instructions" 'codegraph init' "CodeGraph guidance reaches ${client_instructions}"
@@ -144,8 +145,51 @@ assert_file_contains "$vscode_instructions" 'codegraph init' "CodeGraph guidance
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'npm install --global @colbymchenry/codegraph' "CodeGraph installs through managed Node npm"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'codegraph install' "CodeGraph native client integration is installed"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'merge-codex-mcp.py' "Codex MCP configuration does not trigger OAuth during installation"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'configure_grok_mcp' "Grok MCP configuration reuses the TOML merger"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/auth.sh" 'grok login' "Grok interactive login is part of bootstrap auth"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'continuing with plugin reconciliation' "existing plugin marketplaces do not break idempotent reruns"
 assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'agy plugin install https://github.com/DietrichGebert/ponytail' "Ponytail uses the official Antigravity plugin installer"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'grok plugin install DietrichGebert/ponytail@e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156 --trust' "Grok Ponytail install uses an immutable released commit"
+assert_not_contains "$(cat "${BOOTSTRAP_ROOT}/lib/mcp.sh")" 'grok plugin install DietrichGebert/ponytail --trust' "Grok Ponytail install rejects a mutable repository head"
+assert_file_contains "${BOOTSTRAP_ROOT}/lib/mcp.sh" 'claude-codex-hooks.json' "Grok Ponytail plugin exposes hooks.json for native discovery"
+assert_file_contains "${BOOTSTRAP_ROOT}/config/hooks/codegraph-prompt.json" 'codegraph prompt-hook' "Grok native hook catalog invokes CodeGraph prompt-hook"
+
+cat > "${TEST_ROOT}/bin/grok" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+chmod +x "${TEST_ROOT}/bin/grok"
+BOOTSTRAP_DRY_RUN=0
+mkdir -p "${HOME}/.grok"
+printf '%s\n' '[ui]' 'simple_mode = true' > "${HOME}/.grok/config.toml"
+configure_grok_mcp >/dev/null
+grok_first_hash="$(shasum -a 256 "${HOME}/.grok/config.toml" | awk '{print $1}')"
+configure_grok_mcp >/dev/null
+grok_second_hash="$(shasum -a 256 "${HOME}/.grok/config.toml" | awk '{print $1}')"
+assert_eq "$grok_first_hash" "$grok_second_hash" "Grok TOML MCP merge is byte-idempotent"
+assert_file_contains "${HOME}/.grok/config.toml" 'simple_mode = true' "Grok TOML MCP merge preserves unrelated settings"
+assert_file_contains "${HOME}/.grok/config.toml" 'url = "https://mcp.context7.com/mcp"' "Grok TOML MCP merge writes the remote URL"
+assert_file_contains "${HOME}/.grok/hooks/codegraph.json" 'codegraph prompt-hook' "Grok native hook file is installed"
+hook_first_hash="$(shasum -a 256 "${HOME}/.grok/hooks/codegraph.json" | awk '{print $1}')"
+configure_grok_native_hooks
+hook_second_hash="$(shasum -a 256 "${HOME}/.grok/hooks/codegraph.json" | awk '{print $1}')"
+assert_eq "$hook_first_hash" "$hook_second_hash" "Grok native hook install is byte-idempotent"
+
+if (
+  run() { return 1; }
+  configure_grok_mcp >/dev/null 2>&1
+); then
+  fail "Grok MCP configuration propagates catalog merge failure"
+else
+  pass "Grok MCP configuration propagates catalog merge failure"
+fi
+TEST_COUNT=$((TEST_COUNT + 1))
+
+plugin_dir="${HOME}/.grok/installed-plugins/ponytail-testhash"
+mkdir -p "${plugin_dir}/hooks"
+printf '%s\n' '{"hooks":{"SessionStart":[]}}' > "${plugin_dir}/hooks/claude-codex-hooks.json"
+ensure_grok_ponytail_plugin_hooks
+assert_eq "claude-codex-hooks.json" "$(readlink "${plugin_dir}/hooks/hooks.json")" "Grok Ponytail plugin hooks.json is a relative symlink"
 
 source "${BOOTSTRAP_ROOT}/lib/skills.sh"
 ponytail_filter_log="${TEST_ROOT}/ponytail-filter.log"

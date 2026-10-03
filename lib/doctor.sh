@@ -71,11 +71,17 @@ PY
   for required_name in sequential-thinking time deepwiki context7 memory codegraph figma; do
     printf '%s\n' "$output" | grep -Fq "$required_name" || return 1
   done
+  output="$(grok mcp list 2>/dev/null)" || return 1
+  for required_name in sequential-thinking time deepwiki context7 memory codegraph figma; do
+    printf '%s\n' "$output" | grep -Fq "$required_name" || return 1
+  done
   doctor_json_has_all_mcp "${HOME}/.copilot/mcp-config.json" || return 1
   doctor_json_has_all_mcp "${HOME}/.gemini/config/mcp_config.json" || return 1
   doctor_json_has_all_mcp "${HOME}/Library/Application Support/Code/User/mcp.json" servers || return 1
   doctor_file_contains "${HOME}/.agents/AGENTS.md" "codegraph init" &&
-    doctor_file_contains "${HOME}/.agents/AGENTS.md" "DietrichGebert/ponytail"
+    doctor_file_contains "${HOME}/.agents/AGENTS.md" "DietrichGebert/ponytail" &&
+    doctor_file_contains "${HOME}/.grok/rules/AGENTS.md" "codegraph init" &&
+    doctor_file_contains "${HOME}/.grok/hooks/codegraph.json" "codegraph prompt-hook"
 }
 
 doctor_skills() {
@@ -88,7 +94,8 @@ doctor_figma() {
   doctor_file_contains "${BOOTSTRAP_ROOT}/config/mcp-servers.json" "https://mcp.figma.com/mcp" &&
     doctor_file_contains "${HOME}/.copilot/mcp-config.json" "figma" &&
     doctor_file_contains "${HOME}/.gemini/config/mcp_config.json" "figma" &&
-    doctor_file_contains "${HOME}/Library/Application Support/Code/User/mcp.json" "figma"
+    doctor_file_contains "${HOME}/Library/Application Support/Code/User/mcp.json" "figma" &&
+    doctor_file_contains "${HOME}/.grok/config.toml" "https://mcp.figma.com/mcp"
 }
 
 doctor_glances_all() {
@@ -129,6 +136,16 @@ doctor_check_command() {
   else
     doctor_add "$id" "$name" fail "${command_name} is missing"
   fi
+}
+
+doctor_grok_build_identity() {
+  command_exists grok || return 1
+  command_exists codesign || return 1
+  local executable signature
+  executable="$(command -v grok)"
+  signature="$(codesign -dv --verbose=2 "$executable" 2>&1)" || return 1
+  printf '%s\n' "$signature" | grep -Fxq 'TeamIdentifier=5Y6N3AJ54S' &&
+    codesign --verify --strict "$executable" >/dev/null 2>&1
 }
 
 doctor_write_report() {
@@ -245,6 +262,11 @@ run_doctor() {
   else
     doctor_add REQ-21 Security-and-compliance fail "security and compliance evidence is missing or incomplete"
   fi
+  if doctor_grok_build_identity; then
+    doctor_add REQ-22 Grok-Build pass "resolved grok executable has a valid X.AI signature"
+  else
+    doctor_add REQ-22 Grok-Build fail "resolved grok executable is missing or lacks the verified X.AI signature"
+  fi
 
   doctor_write_report
   rm -f "$doctor_results_file"
@@ -254,5 +276,5 @@ run_doctor() {
     record_result doctor failed "${doctor_failure_count} requirement(s) failed"
     return 1
   fi
-  record_result doctor unchanged "all 21 requirements passed"
+  record_result doctor unchanged "all 22 requirements passed"
 }

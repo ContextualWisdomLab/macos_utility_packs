@@ -1,7 +1,15 @@
 # Changelog
 
-## [Unreleased] - 2026-08-13
+## [Unreleased] - 2026-09-07
 
+- Added Grok Build as a first-class bootstrap client: `grok-build` cask,
+  TOML MCP merge into `~/.grok/config.toml`, native `~/.grok/rules/AGENTS.md`,
+  CodeGraph `UserPromptSubmit` hook, Ponytail plugin `--trust` plus
+  `hooks/hooks.json`, doctor `REQ-22`, and `grok login`. The Homebrew formula
+  named `grok` is the unrelated regex tool and is not installed.
+- Hardened the Grok boundary: doctor now verifies the resolved executable's
+  exact X.AI TeamIdentifier, MCP merge failures propagate, and Grok installs the
+  released Ponytail v4.10.0 commit instead of a mutable repository head.
 - Added Claude Desktop, Codex CLI/cask, ChatGPT Desktop, and Visual Studio Code.
 - Added conflict filtering for `mcp`, `claude`, `codex`, `grok`, and `build` skills.
 - Added a JSON skill deny list (`config/skill-blacklist.json`) enforced by skills
